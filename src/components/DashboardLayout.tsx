@@ -109,6 +109,7 @@ export default function DashboardLayout({
 export const adminNavItems: NavItem[] = [
     { label: 'Dashboard', href: '/admin', icon: <LayoutDashboard size={18} /> },
     { label: 'Publishers', href: '/admin/publishers', icon: <Users size={18} /> },
+    { label: 'Students', href: '/admin/students', icon: <Users size={18} /> },
     { label: 'Subjects', href: '/admin/subjects', icon: <BookOpen size={18} /> },
 ];
 
