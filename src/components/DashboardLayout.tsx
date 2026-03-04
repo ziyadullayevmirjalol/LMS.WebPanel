@@ -55,8 +55,8 @@ export default function DashboardLayout({
                                 key={item.href}
                                 href={item.href}
                                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${isActive
-                                        ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/20'
-                                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                                    ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/20'
+                                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
                                     }`}
                             >
                                 <span className={isActive ? 'text-indigo-400' : 'text-slate-500'}>
@@ -118,4 +118,9 @@ export const publisherNavItems: NavItem[] = [
     { label: 'Modules', href: '/publisher/modules', icon: <Layers size={18} /> },
     { label: 'Lessons', href: '/publisher/lessons', icon: <FileText size={18} /> },
     { label: 'Quizzes', href: '/publisher/quizzes', icon: <Puzzle size={18} /> },
+];
+
+export const studentNavItems: NavItem[] = [
+    { label: 'My Courses', href: '/student', icon: <LayoutDashboard size={18} /> },
+    { label: 'Explore', href: '/student/explore', icon: <BookOpen size={18} /> },
 ];
