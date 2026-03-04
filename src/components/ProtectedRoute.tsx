@@ -19,15 +19,18 @@ export default function ProtectedRoute({
             if (!user) {
                 router.push('/login');
             } else if (!allowedRoles.includes(user.role)) {
-                router.push('/login'); // Or an unauthorized page
+                router.push('/login');
             }
         }
     }, [user, isLoading, router, allowedRoles]);
 
     if (isLoading || !user || !allowedRoles.includes(user.role)) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-slate-50">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+            <div className="min-h-screen flex items-center justify-center bg-slate-950">
+                <div className="flex flex-col items-center gap-3">
+                    <div className="animate-spin rounded-full h-8 w-8 border-2 border-indigo-500 border-t-transparent" />
+                    <span className="text-sm text-indigo-200/50">Loading...</span>
+                </div>
             </div>
         );
     }

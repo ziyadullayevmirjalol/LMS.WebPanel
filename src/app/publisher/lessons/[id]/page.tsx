@@ -1,0 +1,503 @@
+'use client';
+
+import { useState, useEffect, useCallback } from 'react';
+import { useParams } from 'next/navigation';
+import ProtectedRoute from '@/components/ProtectedRoute';
+import DashboardLayout, { publisherNavItems } from '@/components/DashboardLayout';
+import { lessonService, contentBlockService } from '@/lib/services/contentService';
+import { quizService } from '@/lib/services/quizService';
+import type {
+    LessonDto,
+    ContentBlockDto,
+    CreateContentBlockDto,
+    ContentBlockType,
+    QuizQuestionDto,
+    CreateQuizQuestionDto,
+} from '@/types/dtos';
+import {
+    FileText,
+    Video,
+    Puzzle,
+    File,
+    PlusCircle,
+    Loader2,
+    AlertCircle,
+    X,
+    ArrowLeft,
+    ChevronDown,
+} from 'lucide-react';
+import Link from 'next/link';
+
+const blockTypeIcons: Record<ContentBlockType, React.ReactNode> = {
+    Text: <FileText size={16} className="text-blue-400" />,
+    Video: <Video size={16} className="text-rose-400" />,
+    Quiz: <Puzzle size={16} className="text-amber-400" />,
+    Pdf: <File size={16} className="text-emerald-400" />,
+};
+
+const blockTypeColors: Record<ContentBlockType, string> = {
+    Text: 'bg-blue-500/10 border-blue-500/20 text-blue-400',
+    Video: 'bg-rose-500/10 border-rose-500/20 text-rose-400',
+    Quiz: 'bg-amber-500/10 border-amber-500/20 text-amber-400',
+    Pdf: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400',
+};
+
+export default function LessonDetailPage() {
+    const params = useParams();
+    const lessonId = params.id as string;
+
+    const [lesson, setLesson] = useState<LessonDto | null>(null);
+    const [blocks, setBlocks] = useState<ContentBlockDto[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+
+    // Content block creation
+    const [showBlockModal, setShowBlockModal] = useState(false);
+    const [blockLoading, setBlockLoading] = useState(false);
+    const [newBlock, setNewBlock] = useState<Omit<CreateContentBlockDto, 'lessonId'>>({
+        type: 'Text',
+        content: '',
+        order: 0,
+    });
+
+    // Quiz management
+    const [expandedQuizBlock, setExpandedQuizBlock] = useState<string | null>(null);
+    const [quizQuestions, setQuizQuestions] = useState<Record<string, QuizQuestionDto[]>>(
+        {}
+    );
+    const [showQuizModal, setShowQuizModal] = useState<string | null>(null);
+    const [quizLoading, setQuizLoading] = useState(false);
+    const [newQuestion, setNewQuestion] = useState<
+        Omit<CreateQuizQuestionDto, 'contentBlockId'>
+    >({
+        questionText: '',
+        options: [
+            { text: '', isCorrect: true },
+            { text: '', isCorrect: false },
+            { text: '', isCorrect: false },
+            { text: '', isCorrect: false },
+        ],
+        explanation: '',
+    });
+
+    const fetchData = useCallback(async () => {
+        setLoading(true);
+        try {
+            const [lessonData, blocksData] = await Promise.all([
+                lessonService.getById(lessonId),
+                contentBlockService.getByLesson(lessonId),
+            ]);
+            setLesson(lessonData);
+            setBlocks(blocksData);
+        } catch {
+            setError('Failed to load lesson data.');
+        } finally {
+            setLoading(false);
+        }
+    }, [lessonId]);
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
+
+    const handleCreateBlock = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setBlockLoading(true);
+        try {
+            const created = await contentBlockService.create({
+                ...newBlock,
+                lessonId,
+                order: blocks.length + 1,
+            });
+            setBlocks((prev) => [...prev, created]);
+            setNewBlock({ type: 'Text', content: '', order: 0 });
+            setShowBlockModal(false);
+        } catch {
+            setError('Failed to create content block.');
+        } finally {
+            setBlockLoading(false);
+        }
+    };
+
+    const handleLoadQuizQuestions = async (blockId: string) => {
+        if (expandedQuizBlock === blockId) {
+            setExpandedQuizBlock(null);
+            return;
+        }
+        setExpandedQuizBlock(blockId);
+        try {
+            const questions = await quizService.getQuestions(blockId);
+            setQuizQuestions((prev) => ({ ...prev, [blockId]: questions }));
+        } catch {
+            setError('Failed to load quiz questions.');
+        }
+    };
+
+    const handleAddQuestion = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!showQuizModal) return;
+        setQuizLoading(true);
+        try {
+            const created = await quizService.addQuestion({
+                ...newQuestion,
+                contentBlockId: showQuizModal,
+            });
+            setQuizQuestions((prev) => ({
+                ...prev,
+                [showQuizModal]: [...(prev[showQuizModal] || []), created],
+            }));
+            setNewQuestion({
+                questionText: '',
+                options: [
+                    { text: '', isCorrect: true },
+                    { text: '', isCorrect: false },
+                    { text: '', isCorrect: false },
+                    { text: '', isCorrect: false },
+                ],
+                explanation: '',
+            });
+            setShowQuizModal(null);
+        } catch {
+            setError('Failed to add question.');
+        } finally {
+            setQuizLoading(false);
+        }
+    };
+
+    return (
+        <ProtectedRoute allowedRoles={['Publisher', 'Admin']}>
+            <DashboardLayout title="Publisher" navItems={publisherNavItems}>
+                {lesson && (
+                    <Link
+                        href={`/publisher/modules/${lesson.moduleId}`}
+                        className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-200 transition mb-6"
+                    >
+                        <ArrowLeft size={14} />
+                        Back to Lessons
+                    </Link>
+                )}
+
+                {loading ? (
+                    <div className="flex items-center justify-center py-24">
+                        <Loader2 className="h-8 w-8 text-indigo-400 animate-spin" />
+                    </div>
+                ) : (
+                    <>
+                        <div className="flex items-center justify-between mb-8">
+                            <div>
+                                <h1 className="text-2xl font-bold text-white">{lesson?.title}</h1>
+                                <p className="text-sm text-slate-400 mt-1">{lesson?.description}</p>
+                            </div>
+                            <button
+                                onClick={() => setShowBlockModal(true)}
+                                className="inline-flex items-center gap-2 bg-indigo-600 text-white px-4 py-2.5 rounded-lg hover:bg-indigo-500 transition shadow-lg shadow-indigo-500/20 text-sm font-medium"
+                            >
+                                <PlusCircle size={16} />
+                                Add Content Block
+                            </button>
+                        </div>
+
+                        {error && (
+                            <div className="flex items-center gap-2 text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded-lg px-4 py-3 mb-6 text-sm">
+                                <AlertCircle size={16} />
+                                {error}
+                            </div>
+                        )}
+
+                        {blocks.length === 0 ? (
+                            <div className="text-center py-20">
+                                <FileText className="h-12 w-12 text-slate-700 mx-auto mb-4" />
+                                <h3 className="text-lg font-medium text-slate-400 mb-1">
+                                    No content blocks yet
+                                </h3>
+                                <p className="text-sm text-slate-500">
+                                    Add text, video, quiz, or PDF blocks to build this lesson
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                {blocks
+                                    .sort((a, b) => a.order - b.order)
+                                    .map((block, idx) => (
+                                        <div key={block.id}>
+                                            <div className="bg-slate-900 rounded-xl border border-slate-800 p-5 hover:border-slate-700 transition">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="h-10 w-10 rounded-lg bg-slate-800 flex items-center justify-center">
+                                                            <span className="text-sm font-bold text-slate-400">
+                                                                {idx + 1}
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            {blockTypeIcons[block.type]}
+                                                            <span
+                                                                className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border ${blockTypeColors[block.type]}`}
+                                                            >
+                                                                {block.type}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    {block.type === 'Quiz' && (
+                                                        <button
+                                                            onClick={() => handleLoadQuizQuestions(block.id)}
+                                                            className="inline-flex items-center gap-1 text-sm font-medium text-indigo-400 hover:text-indigo-300 transition"
+                                                        >
+                                                            {expandedQuizBlock === block.id ? 'Hide' : 'Show'}{' '}
+                                                            Questions
+                                                            <ChevronDown
+                                                                size={14}
+                                                                className={`transition-transform ${expandedQuizBlock === block.id ? 'rotate-180' : ''
+                                                                    }`}
+                                                            />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                                <div className="mt-3 text-sm text-slate-300 bg-slate-800/50 rounded-lg p-3 max-h-32 overflow-auto">
+                                                    <pre className="whitespace-pre-wrap font-sans">
+                                                        {block.content}
+                                                    </pre>
+                                                </div>
+                                            </div>
+
+                                            {/* Quiz Questions Expansion */}
+                                            {block.type === 'Quiz' && expandedQuizBlock === block.id && (
+                                                <div className="ml-14 mt-2 space-y-2">
+                                                    {(quizQuestions[block.id] || []).map((q, qIdx) => (
+                                                        <div
+                                                            key={q.id}
+                                                            className="bg-slate-900/60 rounded-lg border border-slate-800 p-4"
+                                                        >
+                                                            <p className="text-sm font-medium text-white mb-2">
+                                                                Q{qIdx + 1}: {q.questionText}
+                                                            </p>
+                                                            <div className="space-y-1">
+                                                                {q.options.map((opt, oIdx) => (
+                                                                    <div
+                                                                        key={oIdx}
+                                                                        className={`text-xs px-2 py-1 rounded ${opt.isCorrect
+                                                                                ? 'bg-emerald-500/10 text-emerald-300'
+                                                                                : 'text-slate-400'
+                                                                            }`}
+                                                                    >
+                                                                        {String.fromCharCode(65 + oIdx)}. {opt.text}
+                                                                        {opt.isCorrect && ' ✓'}
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                            {q.explanation && (
+                                                                <p className="text-xs text-slate-500 mt-2 italic">
+                                                                    {q.explanation}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                    <button
+                                                        onClick={() => setShowQuizModal(block.id)}
+                                                        className="inline-flex items-center gap-1.5 text-xs font-medium text-indigo-400 hover:text-indigo-300 transition px-3 py-2"
+                                                    >
+                                                        <PlusCircle size={12} />
+                                                        Add Question
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                            </div>
+                        )}
+                    </>
+                )}
+
+                {/* ── Create Content Block Modal ── */}
+                {showBlockModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+                        <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6">
+                            <div className="flex items-center justify-between mb-6">
+                                <h2 className="text-lg font-semibold text-white">
+                                    Add Content Block
+                                </h2>
+                                <button
+                                    onClick={() => setShowBlockModal(false)}
+                                    className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition"
+                                >
+                                    <X size={18} />
+                                </button>
+                            </div>
+                            <form onSubmit={handleCreateBlock} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                                        Type
+                                    </label>
+                                    <select
+                                        value={newBlock.type}
+                                        onChange={(e) =>
+                                            setNewBlock((prev) => ({
+                                                ...prev,
+                                                type: e.target.value as ContentBlockType,
+                                            }))
+                                        }
+                                        className="block w-full rounded-lg py-2.5 px-3 bg-slate-800 border border-slate-700 text-white text-sm transition"
+                                    >
+                                        <option value="Text">Text</option>
+                                        <option value="Video">Video</option>
+                                        <option value="Quiz">Quiz</option>
+                                        <option value="Pdf">PDF</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                                        Content
+                                    </label>
+                                    <textarea
+                                        required
+                                        rows={5}
+                                        className="block w-full rounded-lg py-2.5 px-3 bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm transition resize-none font-mono"
+                                        placeholder={
+                                            newBlock.type === 'Text'
+                                                ? 'Enter text content or HTML...'
+                                                : newBlock.type === 'Video'
+                                                    ? 'Enter video URL...'
+                                                    : newBlock.type === 'Pdf'
+                                                        ? 'Enter PDF URL...'
+                                                        : 'Quiz block — add questions after creating'
+                                        }
+                                        value={newBlock.content}
+                                        onChange={(e) =>
+                                            setNewBlock((prev) => ({ ...prev, content: e.target.value }))
+                                        }
+                                    />
+                                </div>
+                                <div className="flex gap-3 pt-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowBlockModal(false)}
+                                        className="flex-1 py-2.5 px-4 rounded-lg border border-slate-700 text-sm font-medium text-slate-300 hover:bg-slate-800 transition"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={blockLoading}
+                                        className="flex-1 py-2.5 px-4 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 disabled:opacity-50 transition"
+                                    >
+                                        {blockLoading ? 'Creating...' : 'Add Block'}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )}
+
+                {/* ── Add Quiz Question Modal ── */}
+                {showQuizModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+                        <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6 max-h-[90vh] overflow-y-auto">
+                            <div className="flex items-center justify-between mb-6">
+                                <h2 className="text-lg font-semibold text-white">
+                                    Add Quiz Question
+                                </h2>
+                                <button
+                                    onClick={() => setShowQuizModal(null)}
+                                    className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition"
+                                >
+                                    <X size={18} />
+                                </button>
+                            </div>
+                            <form onSubmit={handleAddQuestion} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                                        Question
+                                    </label>
+                                    <input
+                                        type="text"
+                                        required
+                                        className="block w-full rounded-lg py-2.5 px-3 bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm transition"
+                                        placeholder="What is...?"
+                                        value={newQuestion.questionText}
+                                        onChange={(e) =>
+                                            setNewQuestion((prev) => ({
+                                                ...prev,
+                                                questionText: e.target.value,
+                                            }))
+                                        }
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                                        Options (mark the correct answer)
+                                    </label>
+                                    <div className="space-y-2">
+                                        {newQuestion.options.map((opt, idx) => (
+                                            <div key={idx} className="flex items-center gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setNewQuestion((prev) => ({
+                                                            ...prev,
+                                                            options: prev.options.map((o, i) => ({
+                                                                ...o,
+                                                                isCorrect: i === idx,
+                                                            })),
+                                                        }));
+                                                    }}
+                                                    className={`h-5 w-5 rounded-full border-2 flex-shrink-0 transition ${opt.isCorrect
+                                                            ? 'border-emerald-400 bg-emerald-400'
+                                                            : 'border-slate-600 hover:border-slate-400'
+                                                        }`}
+                                                />
+                                                <input
+                                                    type="text"
+                                                    required
+                                                    className="flex-1 rounded-lg py-2 px-3 bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-sm transition"
+                                                    placeholder={`Option ${String.fromCharCode(65 + idx)}`}
+                                                    value={opt.text}
+                                                    onChange={(e) => {
+                                                        const updated = [...newQuestion.options];
+                                                        updated[idx] = { ...updated[idx], text: e.target.value };
+                                                        setNewQuestion((prev) => ({ ...prev, options: updated }));
+                                                    }}
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                                        Explanation (optional)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        className="block w-full rounded-lg py-2.5 px-3 bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-sm transition"
+                                        placeholder="Why is this the correct answer?"
+                                        value={newQuestion.explanation}
+                                        onChange={(e) =>
+                                            setNewQuestion((prev) => ({
+                                                ...prev,
+                                                explanation: e.target.value,
+                                            }))
+                                        }
+                                    />
+                                </div>
+                                <div className="flex gap-3 pt-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowQuizModal(null)}
+                                        className="flex-1 py-2.5 px-4 rounded-lg border border-slate-700 text-sm font-medium text-slate-300 hover:bg-slate-800 transition"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={quizLoading}
+                                        className="flex-1 py-2.5 px-4 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 disabled:opacity-50 transition"
+                                    >
+                                        {quizLoading ? 'Adding...' : 'Add Question'}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )}
+            </DashboardLayout>
+        </ProtectedRoute>
+    );
+}
