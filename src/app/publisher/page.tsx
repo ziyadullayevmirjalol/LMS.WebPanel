@@ -3,9 +3,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import DashboardLayout, { publisherNavItems } from '@/components/DashboardLayout';
-import { subjectService } from '@/lib/services/contentService';
+import { subjectService, moduleService, lessonService } from '@/lib/services/contentService';
+import { quizService } from '@/lib/services/quizService';
 import { useAuth } from '@/context/AuthContext';
-import type { SubjectDto, SubjectCreateDto } from '@/types/dtos';
 import {
     BookOpen,
     PlusCircle,
@@ -13,226 +13,179 @@ import {
     AlertCircle,
     X,
     ExternalLink,
+    Layers,
+    FileText,
+    Puzzle,
 } from 'lucide-react';
 import Link from 'next/link';
+import type { SubjectDto } from '@/types/dtos';
 
 export default function PublisherDashboard() {
     const { user } = useAuth();
-    const [subjects, setSubjects] = useState<SubjectDto[]>([]);
+    const [stats, setStats] = useState({
+        subjects: 0,
+        modules: 0,
+        lessons: 0,
+        quizzes: 0,
+    });
+    const [recentSubjects, setRecentSubjects] = useState<SubjectDto[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [showCreateModal, setShowCreateModal] = useState(false);
-    const [createLoading, setCreateLoading] = useState(false);
-    const [newSubject, setNewSubject] = useState<SubjectCreateDto>({
-        title: '',
-        description: '',
-    });
 
-    const fetchSubjects = useCallback(async () => {
-        console.log('[PublisherDashboard] Fetching subjects...');
+    const fetchDashboardData = useCallback(async () => {
         setLoading(true);
         setError('');
         try {
-            const data = await subjectService.getPublisherSubjects();
-            console.log('[PublisherDashboard] Subjects fetched:', data);
-            setSubjects(data);
+            const [subjects, modules, lessons, quizzes] = await Promise.all([
+                subjectService.getPublisherSubjects(),
+                moduleService.getPublisherModules(),
+                lessonService.getPublisherLessons(),
+                quizService.getPublisherQuizzes(),
+            ]);
+
+            setStats({
+                subjects: subjects.length,
+                modules: modules.length,
+                lessons: lessons.length,
+                quizzes: quizzes.length,
+            });
+
+            // Get last 3 subjects
+            setRecentSubjects([...subjects].sort((a: SubjectDto, b: SubjectDto) =>
+                new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+            ).slice(0, 3));
+
         } catch (err) {
             console.error('[PublisherDashboard] Fetch error:', err);
-            setError('Failed to load subjects.');
+            setError('Failed to load dashboard data.');
         } finally {
             setLoading(false);
         }
     }, []);
 
     useEffect(() => {
-        fetchSubjects();
-    }, [fetchSubjects]);
+        fetchDashboardData();
+    }, [fetchDashboardData]);
 
-    const handleCreateSubject = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setCreateLoading(true);
-        try {
-            const created = await subjectService.create(newSubject);
-            setSubjects((prev) => [created, ...prev]);
-            setNewSubject({ title: '', description: '' });
-            setShowCreateModal(false);
-        } catch {
-            setError('Failed to create subject.');
-        } finally {
-            setCreateLoading(false);
-        }
-    };
+    const statCards = [
+        { label: 'Total Subjects', value: stats.subjects, icon: <BookOpen size={20} />, color: 'text-indigo-400', bg: 'bg-indigo-500/10' },
+        { label: 'Total Modules', value: stats.modules, icon: <Layers size={20} />, color: 'text-amber-400', bg: 'bg-amber-500/10' },
+        { label: 'Total Lessons', value: stats.lessons, icon: <FileText size={20} />, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+        { label: 'Quiz Questions', value: stats.quizzes, icon: <Puzzle size={20} />, color: 'text-purple-400', bg: 'bg-purple-500/10' },
+    ];
 
     return (
         <ProtectedRoute allowedRoles={['Publisher']}>
-            <DashboardLayout title="Publisher" navItems={publisherNavItems}>
-                {/* Header */}
-                <div className="flex items-center justify-between mb-8">
-                    <div>
-                        <h1 className="text-2xl font-bold text-white">My Subjects</h1>
-                        <p className="text-sm text-slate-400 mt-1">
-                            Manage your educational content
-                        </p>
-                    </div>
-                    <button
-                        onClick={() => setShowCreateModal(true)}
-                        className="inline-flex items-center gap-2 bg-indigo-600 text-white px-4 py-2.5 rounded-lg hover:bg-indigo-500 transition shadow-lg shadow-indigo-500/20 text-sm font-medium"
-                    >
-                        <PlusCircle size={16} />
-                        Create Subject
-                    </button>
+            <DashboardLayout title="Dashboard" navItems={publisherNavItems}>
+                {/* Welcome Header */}
+                <div className="mb-10">
+                    <h1 className="text-3xl font-bold text-white mb-2">
+                        Welcome back, {user?.fullName || 'Publisher'}
+                    </h1>
+                    <p className="text-slate-400">
+                        Here's an overview of your educational content and progress.
+                    </p>
                 </div>
 
                 {error && (
-                    <div className="flex items-center gap-2 text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded-lg px-4 py-3 mb-6 text-sm">
+                    <div className="flex items-center gap-2 text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded-lg px-4 py-3 mb-8 text-sm">
                         <AlertCircle size={16} />
                         {error}
                     </div>
                 )}
 
-                {/* Subjects Grid */}
-                {loading ? (
-                    <div className="flex items-center justify-center py-24">
-                        <Loader2 className="h-8 w-8 text-indigo-400 animate-spin" />
-                    </div>
-                ) : subjects.length === 0 ? (
-                    <div className="text-center py-24">
-                        <BookOpen className="h-12 w-12 text-slate-700 mx-auto mb-4" />
-                        <h3 className="text-lg font-medium text-slate-400 mb-1">
-                            No subjects yet
-                        </h3>
-                        <p className="text-sm text-slate-500 mb-6">
-                            Create your first subject to start building your course
-                        </p>
-                        <button
-                            onClick={() => setShowCreateModal(true)}
-                            className="inline-flex items-center gap-2 bg-indigo-600 text-white px-4 py-2.5 rounded-lg hover:bg-indigo-500 transition text-sm font-medium"
-                        >
-                            <PlusCircle size={16} />
-                            Create Subject
-                        </button>
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {subjects.map((subject) => (
-                            <div
-                                key={subject.id}
-                                className="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden hover:border-slate-700 transition group"
-                            >
-                                <div className="h-28 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 flex items-center justify-center">
-                                    <BookOpen className="h-10 w-10 text-indigo-500/30 group-hover:text-indigo-500/50 transition" />
+                {/* Stats Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                    {statCards.map((stat, idx) => (
+                        <div key={idx} className="bg-slate-900/50 backdrop-blur-sm p-6 rounded-2xl border border-slate-800 hover:border-slate-700 transition">
+                            <div className="flex items-center justify-between mb-4">
+                                <div className={`p-2.5 ${stat.bg} ${stat.color} rounded-xl`}>
+                                    {stat.icon}
                                 </div>
-                                <div className="p-5">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <h3 className="text-base font-semibold text-white mb-0 truncate">
-                                            {subject.title}
-                                        </h3>
-                                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${subject.isPublished
-                                                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                                                : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                                            }`}>
-                                            {subject.isPublished ? 'Published' : 'Draft'}
-                                        </span>
-                                    </div>
-                                    <p className="text-sm text-slate-400 line-clamp-2 mb-4 min-h-[2.5rem]">
-                                        {subject.description}
-                                    </p>
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-xs text-slate-500">
-                                            {subject.createdAt
-                                                ? new Date(subject.createdAt).toLocaleDateString()
-                                                : ''}
-                                        </span>
-                                        <Link
-                                            href={`/publisher/subjects/${subject.id}`}
-                                            className="inline-flex items-center gap-1 text-sm font-medium text-indigo-400 hover:text-indigo-300 transition"
-                                        >
-                                            Manage
-                                            <ExternalLink size={12} />
-                                        </Link>
-                                    </div>
-                                </div>
+                                <span className="text-2xl font-bold text-white">
+                                    {loading ? '...' : stat.value}
+                                </span>
                             </div>
-                        ))}
-                    </div>
-                )}
+                            <span className="text-sm font-medium text-slate-500">{stat.label}</span>
+                        </div>
+                    ))}
+                </div>
 
-                {/* ── Create Subject Modal ── */}
-                {showCreateModal && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-                        <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6">
-                            <div className="flex items-center justify-between mb-6">
-                                <h2 className="text-lg font-semibold text-white">
-                                    Create New Subject
-                                </h2>
-                                <button
-                                    onClick={() => setShowCreateModal(false)}
-                                    className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition"
-                                >
-                                    <X size={18} />
-                                </button>
+                {/* Recent Content Section */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div className="lg:col-span-2">
+                        <div className="flex items-center justify-between mb-6">
+                            <h2 className="text-xl font-bold text-white">Recent Subjects</h2>
+                            <Link href="/publisher/subjects" className="text-sm font-medium text-indigo-400 hover:text-indigo-300 transition flex items-center gap-1">
+                                View all <ExternalLink size={14} />
+                            </Link>
+                        </div>
+
+                        {loading ? (
+                            <div className="flex items-center justify-center py-12">
+                                <Loader2 className="h-8 w-8 text-indigo-400 animate-spin" />
                             </div>
-                            <form onSubmit={handleCreateSubject} className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                                        Title
-                                    </label>
-                                    <input
-                                        type="text"
-                                        required
-                                        className="block w-full rounded-lg py-2.5 px-3 bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm transition"
-                                        placeholder="e.g., Introduction to C#"
-                                        value={newSubject.title}
-                                        onChange={(e) =>
-                                            setNewSubject((prev) => ({ ...prev, title: e.target.value }))
-                                        }
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                                        Description
-                                    </label>
-                                    <textarea
-                                        required
-                                        rows={3}
-                                        className="block w-full rounded-lg py-2.5 px-3 bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm transition resize-none"
-                                        placeholder="What will students learn?"
-                                        value={newSubject.description}
-                                        onChange={(e) =>
-                                            setNewSubject((prev) => ({
-                                                ...prev,
-                                                description: e.target.value,
-                                            }))
-                                        }
-                                    />
-                                </div>
-                                <div className="flex gap-3 pt-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowCreateModal(false)}
-                                        className="flex-1 py-2.5 px-4 rounded-lg border border-slate-700 text-sm font-medium text-slate-300 hover:bg-slate-800 transition"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        disabled={createLoading}
-                                        className="flex-1 py-2.5 px-4 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 disabled:opacity-50 transition"
-                                    >
-                                        {createLoading ? (
-                                            <span className="flex items-center justify-center gap-2">
-                                                <Loader2 size={14} className="animate-spin" />
-                                                Creating...
+                        ) : recentSubjects.length === 0 ? (
+                            <div className="bg-slate-900/30 border border-dashed border-slate-800 rounded-2xl p-12 text-center">
+                                <BookOpen className="h-10 w-10 text-slate-700 mx-auto mb-3" />
+                                <p className="text-slate-500 text-sm">No subjects created yet.</p>
+                                <Link href="/publisher/subjects" className="mt-4 inline-block text-indigo-400 text-sm font-medium">Create your first subject</Link>
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                {recentSubjects.map((subject) => (
+                                    <div key={subject.id} className="bg-slate-900 p-4 rounded-xl border border-slate-800 flex items-center justify-between hover:border-slate-700 transition">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400">
+                                                <BookOpen size={24} />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-white font-medium">{subject.title}</h3>
+                                                <p className="text-xs text-slate-500">Created on {new Date(subject.createdAt || '').toLocaleDateString()}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold uppercase tracking-wider ${subject.isPublished ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'}`}>
+                                                {subject.isPublished ? 'Published' : 'Draft'}
                                             </span>
-                                        ) : (
-                                            'Create Subject'
-                                        )}
-                                    </button>
+                                            <Link href={`/publisher/subjects/${subject.id}`} className="p-2 text-slate-500 hover:text-white rounded-lg hover:bg-slate-800 transition">
+                                                <ExternalLink size={18} />
+                                            </Link>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Quick Access / Help Sidebar */}
+                    <div className="space-y-6">
+                        <div className="bg-indigo-600 rounded-2xl p-6 text-white overflow-hidden relative group">
+                            <div className="absolute -right-8 -bottom-8 opacity-10 group-hover:scale-110 transition duration-500">
+                                <PlusCircle size={140} />
+                            </div>
+                            <h3 className="text-lg font-bold mb-2">Build your course</h3>
+                            <p className="text-indigo-100 text-sm mb-6 opacity-80">Ready to share your knowledge? Start by creating a new subject.</p>
+                            <Link href="/publisher/subjects" className="bg-white text-indigo-600 px-4 py-2 rounded-lg text-sm font-bold shadow-lg hover:bg-indigo-50 transition relative z-10">
+                                Get Started
+                            </Link>
+                        </div>
+
+                        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+                            <h3 className="text-white font-bold mb-4">Quick Stats</h3>
+                            <div className="space-y-4">
+                                <div className="flex justify-between items-center text-sm">
+                                    <span className="text-slate-400">Avg. Modules/Subject</span>
+                                    <span className="text-white font-medium">{(stats.modules / (stats.subjects || 1)).toFixed(1)}</span>
                                 </div>
-                            </form>
+                                <div className="flex justify-between items-center text-sm">
+                                    <span className="text-slate-400">Total Lessons</span>
+                                    <span className="text-white font-medium">{stats.lessons}</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                )}
+                </div>
             </DashboardLayout>
         </ProtectedRoute>
     );

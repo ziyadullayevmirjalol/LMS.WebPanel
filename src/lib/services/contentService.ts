@@ -36,6 +36,14 @@ export const subjectService = {
     async publish(id: string): Promise<void> {
         await api.post(`/Subjects/${id}/publish`);
     },
+
+    async toggleStatus(id: string, isActive: boolean): Promise<void> {
+        await api.patch(`/Subjects/${id}/status`, isActive);
+    },
+
+    async delete(id: string): Promise<void> {
+        await api.post(`/Subjects/${id}/delete`);
+    },
 };
 
 // ── Modules ──
@@ -55,6 +63,11 @@ export const moduleService = {
         const response = await api.post<ModuleDto>('/Modules', dto);
         return response.data;
     },
+
+    async getPublisherModules(): Promise<ModuleDto[]> {
+        const response = await api.get<ModuleDto[]>('/Modules/publisher');
+        return response.data;
+    },
 };
 
 // ── Lessons ──
@@ -72,6 +85,11 @@ export const lessonService = {
 
     async create(dto: LessonCreateDto): Promise<LessonDto> {
         const response = await api.post<LessonDto>('/Lessons', dto);
+        return response.data;
+    },
+
+    async getPublisherLessons(): Promise<LessonDto[]> {
+        const response = await api.get<LessonDto[]>('/Lessons/publisher');
         return response.data;
     },
 };

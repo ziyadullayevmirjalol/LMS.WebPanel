@@ -45,6 +45,7 @@ export interface PublisherDto {
     email: string;
     fullName: string;
     isApproved: boolean;
+    isActive: boolean;
     createdAt?: string;
 }
 
@@ -61,6 +62,8 @@ export interface SubjectDto {
     title: string;
     description: string;
     isPublished: boolean;
+    isActive: boolean;
+    isDeleted: boolean;
     publisherId: string;
     publisherName?: string;
     createdAt?: string;

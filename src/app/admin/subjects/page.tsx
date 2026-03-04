@@ -11,12 +11,14 @@ import {
     CheckCircle,
     User,
     Calendar,
+    Trash2,
 } from 'lucide-react';
 
 export default function AdminSubjectsPage() {
     const [subjects, setSubjects] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [actionLoading, setActionLoading] = useState<string | null>(null);
 
     const fetchSubjects = useCallback(async () => {
         setLoading(true);
@@ -31,6 +33,19 @@ export default function AdminSubjectsPage() {
             setLoading(false);
         }
     }, []);
+
+    const handleHardDelete = async (id: string) => {
+        if (!window.confirm('PERMANENT DELETE: This cannot be undone. Are you sure?')) return;
+        setActionLoading(id);
+        try {
+            await adminService.hardDeleteSubject(id);
+            setSubjects((prev) => prev.filter((s) => s.id !== id));
+        } catch {
+            setError('Failed to permanently delete subject.');
+        } finally {
+            setActionLoading(null);
+        }
+    };
 
     useEffect(() => {
         fetchSubjects();
@@ -71,15 +86,24 @@ export default function AdminSubjectsPage() {
                                         <h3 className="text-lg font-bold text-white group-hover:text-indigo-400 transition">
                                             {subject.title}
                                         </h3>
-                                        {subject.isPublished ? (
-                                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                                                Active
-                                            </span>
-                                        ) : (
-                                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                                                Draft
-                                            </span>
-                                        )}
+                                        <div className="flex flex-col items-end gap-1.5 shrink-0">
+                                            {subject.isDeleted ? (
+                                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-500/10 text-red-400 border border-red-500/20">
+                                                    Deleted
+                                                </span>
+                                            ) : subject.isPublished ? (
+                                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${subject.isActive
+                                                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                                                    : 'bg-slate-500/10 text-slate-400 border-slate-500/20'
+                                                    }`}>
+                                                    {subject.isActive ? 'Active' : 'Inactive'}
+                                                </span>
+                                            ) : (
+                                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                                    Draft
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                     <p className="text-sm text-slate-400 line-clamp-2 mb-6 flex-grow">
                                         {subject.description}
@@ -93,6 +117,18 @@ export default function AdminSubjectsPage() {
                                             <Calendar size={12} className="text-slate-600" />
                                             <span>Created: {new Date(subject.createdAt).toLocaleDateString()}</span>
                                         </div>
+                                    </div>
+
+                                    <div className="mt-4 pt-4 border-t border-slate-800 flex justify-end">
+                                        <button
+                                            onClick={() => handleHardDelete(subject.id)}
+                                            disabled={actionLoading === subject.id}
+                                            title="Permanently Delete"
+                                            className="inline-flex items-center gap-2 text-xs font-medium text-red-400 hover:text-red-300 transition disabled:opacity-50"
+                                        >
+                                            {actionLoading === subject.id ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
+                                            Final Delete
+                                        </button>
                                     </div>
                                 </div>
                             </div>

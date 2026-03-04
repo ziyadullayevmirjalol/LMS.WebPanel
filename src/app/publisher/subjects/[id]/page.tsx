@@ -15,11 +15,16 @@ import {
     ArrowLeft,
     ExternalLink,
     CheckCircle,
+    Trash2,
+    Eye,
+    EyeOff,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function SubjectDetailPage() {
     const params = useParams();
+    const router = useRouter();
     const subjectId = params.id as string;
 
     const [subject, setSubject] = useState<SubjectDto | null>(null);
@@ -33,6 +38,8 @@ export default function SubjectDetailPage() {
         orderIndex: 0,
     });
     const [publishLoading, setPublishLoading] = useState(false);
+    const [statusLoading, setStatusLoading] = useState(false);
+    const [deleteLoading, setDeleteLoading] = useState(false);
 
     const fetchData = useCallback(async () => {
         setLoading(true);
@@ -64,6 +71,33 @@ export default function SubjectDetailPage() {
             setError('Failed to publish subject.');
         } finally {
             setPublishLoading(false);
+        }
+    };
+
+    const handleToggleStatus = async () => {
+        if (!subject) return;
+        setStatusLoading(true);
+        try {
+            const nextStatus = !subject.isActive;
+            await subjectService.toggleStatus(subjectId, nextStatus);
+            setSubject((prev) => prev ? { ...prev, isActive: nextStatus } : null);
+        } catch {
+            setError('Failed to update subject status.');
+        } finally {
+            setStatusLoading(false);
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!subject || !window.confirm('Are you sure you want to delete this subject? It will be hidden from your dashboard.')) return;
+        setDeleteLoading(true);
+        try {
+            await subjectService.delete(subjectId);
+            router.push('/publisher');
+        } catch {
+            setError('Failed to delete subject.');
+        } finally {
+            setDeleteLoading(false);
         }
     };
 
@@ -125,7 +159,7 @@ export default function SubjectDetailPage() {
                                 </div>
                             </div>
                             <div className="flex items-center gap-3">
-                                {!subject?.isPublished && (
+                                {subject?.isActive && !subject?.isPublished && (
                                     <button
                                         onClick={handlePublish}
                                         disabled={publishLoading}
@@ -135,6 +169,31 @@ export default function SubjectDetailPage() {
                                         Publish
                                     </button>
                                 )}
+
+                                {subject?.isPublished && (
+                                    <button
+                                        onClick={handleToggleStatus}
+                                        disabled={statusLoading}
+                                        title={subject.isActive ? 'Deactivate (Hide from students)' : 'Activate (Show to students)'}
+                                        className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-lg transition shadow-lg text-sm font-medium disabled:opacity-50 ${subject.isActive
+                                            ? 'bg-slate-800 text-slate-300 hover:bg-slate-700 shadow-slate-900/20'
+                                            : 'bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-600/30 shadow-emerald-900/20'
+                                            }`}
+                                    >
+                                        {statusLoading ? <Loader2 size={16} className="animate-spin" /> : (subject.isActive ? <EyeOff size={16} /> : <Eye size={16} />)}
+                                        {subject.isActive ? 'Deactivate' : 'Activate'}
+                                    </button>
+                                )}
+
+                                <button
+                                    onClick={handleDelete}
+                                    disabled={deleteLoading}
+                                    title="Delete Subject"
+                                    className="p-2.5 bg-red-500/10 text-red-400 border border-red-500/20 rounded-lg hover:bg-red-500/20 transition disabled:opacity-50"
+                                >
+                                    {deleteLoading ? <Loader2 size={18} className="animate-spin" /> : <Trash2 size={18} />}
+                                </button>
+
                                 <button
                                     onClick={() => setShowCreateModal(true)}
                                     className="inline-flex items-center gap-2 bg-indigo-600 text-white px-4 py-2.5 rounded-lg hover:bg-indigo-500 transition shadow-lg shadow-indigo-500/20 text-sm font-medium"

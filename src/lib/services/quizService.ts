@@ -15,6 +15,11 @@ export const quizService = {
         return response.data;
     },
 
+    async getPublisherQuizzes(): Promise<QuizQuestionDto[]> {
+        const response = await api.get<QuizQuestionDto[]>('/Quiz/publisher');
+        return response.data;
+    },
+
     /**
      * POST /api/quiz/question
      */

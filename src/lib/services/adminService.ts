@@ -19,11 +19,25 @@ export const adminService = {
     },
 
     /**
+     * PATCH /api/Admin/students/{id}/status
+     */
+    async toggleStudentStatus(id: string, isActive: boolean): Promise<void> {
+        await api.patch(`/Admin/students/${id}/status`, isActive);
+    },
+
+    /**
      * GET /api/Admin/subjects
      */
     async getAllSubjects(): Promise<any[]> {
         const response = await api.get<any[]>('/Admin/subjects');
         return response.data;
+    },
+
+    /**
+     * POST /api/Admin/subjects/{id}/hard-delete
+     */
+    async hardDeleteSubject(id: string): Promise<void> {
+        await api.post(`/Admin/subjects/${id}/hard-delete`);
     },
 
     /**
