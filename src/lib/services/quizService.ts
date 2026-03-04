@@ -1,8 +1,8 @@
 import api from '@/lib/api';
 import type {
     QuizQuestionDto,
-    CreateQuizQuestionDto,
-    SubmitQuizDto,
+    QuizQuestionCreateDto,
+    QuizSubmitDto,
     QuizAttemptDto,
 } from '@/types/dtos';
 
@@ -11,23 +11,23 @@ export const quizService = {
      * GET /api/quiz/block/{contentBlockId}
      */
     async getQuestions(contentBlockId: string): Promise<QuizQuestionDto[]> {
-        const response = await api.get<QuizQuestionDto[]>(`/quiz/block/${contentBlockId}`);
+        const response = await api.get<QuizQuestionDto[]>(`/Quiz/block/${contentBlockId}`);
         return response.data;
     },
 
     /**
      * POST /api/quiz/question
      */
-    async addQuestion(dto: CreateQuizQuestionDto): Promise<QuizQuestionDto> {
-        const response = await api.post<QuizQuestionDto>('/quiz/question', dto);
+    async addQuestion(dto: QuizQuestionCreateDto): Promise<QuizQuestionDto> {
+        const response = await api.post<QuizQuestionDto>('/Quiz/question', dto);
         return response.data;
     },
 
     /**
      * POST /api/quiz/submit
      */
-    async submitQuiz(dto: SubmitQuizDto): Promise<QuizAttemptDto> {
-        const response = await api.post<QuizAttemptDto>('/quiz/submit', dto);
+    async submitQuiz(dto: QuizSubmitDto): Promise<QuizAttemptDto> {
+        const response = await api.post<QuizAttemptDto>('/Quiz/submit', dto);
         return response.data;
     },
 
@@ -36,7 +36,7 @@ export const quizService = {
      */
     async getAttempts(studentId: string, contentBlockId: string): Promise<QuizAttemptDto[]> {
         const response = await api.get<QuizAttemptDto[]>(
-            `/quiz/attempts/${studentId}/${contentBlockId}`
+            `/Quiz/attempts/${studentId}/${contentBlockId}`
         );
         return response.data;
     },

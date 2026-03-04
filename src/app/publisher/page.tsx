@@ -5,7 +5,7 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import DashboardLayout, { publisherNavItems } from '@/components/DashboardLayout';
 import { subjectService } from '@/lib/services/contentService';
 import { useAuth } from '@/context/AuthContext';
-import type { SubjectDto, CreateSubjectDto } from '@/types/dtos';
+import type { SubjectDto, SubjectCreateDto } from '@/types/dtos';
 import {
     BookOpen,
     PlusCircle,
@@ -23,7 +23,7 @@ export default function PublisherDashboard() {
     const [error, setError] = useState('');
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [createLoading, setCreateLoading] = useState(false);
-    const [newSubject, setNewSubject] = useState<CreateSubjectDto>({
+    const [newSubject, setNewSubject] = useState<SubjectCreateDto>({
         title: '',
         description: '',
     });

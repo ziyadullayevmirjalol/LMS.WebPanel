@@ -1,14 +1,23 @@
+// ========== Enums ==========
+
+export enum ContentType {
+    Text = 0,
+    Video = 1,
+    Quiz = 2,
+    Pdf = 3,
+}
+
 // ========== Auth DTOs ==========
 
 export interface LoginDto {
-    email: string;
-    password: string;
+    email?: string;
+    password?: string;
 }
 
 export interface RegisterDto {
-    email: string;
-    password: string;
-    fullName: string;
+    email?: string;
+    password?: string;
+    fullName?: string;
 }
 
 export interface AuthResponseDto {
@@ -41,6 +50,12 @@ export interface PublisherDto {
 
 // ========== Subject DTOs ==========
 
+export interface SubjectCreateDto {
+    title: string;
+    description: string;
+    publisherId?: string;
+}
+
 export interface SubjectDto {
     id: string;
     title: string;
@@ -50,89 +65,89 @@ export interface SubjectDto {
     createdAt?: string;
 }
 
-export interface CreateSubjectDto {
-    title: string;
-    description: string;
-}
-
 // ========== Module DTOs ==========
+
+export interface ModuleCreateDto {
+    title: string;
+    orderIndex?: number;
+    subjectId: string;
+}
 
 export interface ModuleDto {
     id: string;
     title: string;
-    description: string;
-    order: number;
+    description?: string;
+    orderIndex: number;
     subjectId: string;
 }
 
-export interface CreateModuleDto {
-    title: string;
-    description: string;
-    order: number;
-    subjectId: string;
-}
 
 // ========== Lesson DTOs ==========
+
+export interface LessonCreateDto {
+    title: string;
+    orderIndex?: number;
+    moduleId: string;
+}
 
 export interface LessonDto {
     id: string;
     title: string;
-    description: string;
-    order: number;
+    description?: string;
+    orderIndex: number;
     moduleId: string;
 }
 
-export interface CreateLessonDto {
-    title: string;
-    description: string;
-    order: number;
-    moduleId: string;
-}
 
 // ========== Content Block DTOs ==========
 
-export type ContentBlockType = 'Text' | 'Video' | 'Quiz' | 'Pdf';
+export interface ContentBlockCreateDto {
+    type: ContentType;
+    contentText?: string;
+    mediaUrl?: string;
+    orderIndex?: number;
+    lessonId: string;
+}
 
 export interface ContentBlockDto {
     id: string;
-    type: ContentBlockType;
-    content: string;
-    order: number;
+    type: ContentType;
+    contentText?: string;
+    mediaUrl?: string;
+    orderIndex: number;
     lessonId: string;
 }
 
-export interface CreateContentBlockDto {
-    type: ContentBlockType;
-    content: string;
-    order: number;
-    lessonId: string;
-}
 
 // ========== Quiz DTOs ==========
 
-export interface QuizOptionDto {
-    text: string;
-    isCorrect: boolean;
+export interface QuizQuestionCreateDto {
+    questionText: string;
+    optionA: string;
+    optionB: string;
+    optionC?: string;
+    optionD?: string;
+    correctOption: string;
+    explanation?: string;
+    contentBlockId: string;
 }
 
 export interface QuizQuestionDto {
     id: string;
     questionText: string;
-    options: QuizOptionDto[];
-    contentBlockId: string;
+    optionA: string;
+    optionB: string;
+    optionC?: string;
+    optionD?: string;
+    correctOption: string;
     explanation?: string;
+    contentBlockId: string;
 }
 
-export interface CreateQuizQuestionDto {
-    questionText: string;
-    options: QuizOptionDto[];
+export interface QuizSubmitDto {
+    studentId: string;
     contentBlockId: string;
-    explanation?: string;
-}
-
-export interface SubmitQuizDto {
-    contentBlockId: string;
-    answers: { questionId: string; selectedOptionIndex: number }[];
+    answers?: Record<string, string>;
 }
 
 export interface QuizAttemptDto {
@@ -146,6 +161,11 @@ export interface QuizAttemptDto {
 
 // ========== Enrollment DTOs ==========
 
+export interface EnrollmentCreateDto {
+    studentId: string;
+    subjectId: string;
+}
+
 export interface EnrollmentDto {
     id: string;
     studentId: string;
@@ -155,11 +175,10 @@ export interface EnrollmentDto {
     enrolledAt: string;
 }
 
-export interface CreateEnrollmentDto {
-    studentId: string;
-    subjectId: string;
-}
-
-export interface UpdateProgressDto {
-    progress: number;
+// ========== Weather Forecast DTOs ==========
+export interface WeatherForecast {
+    date?: string;
+    temperatureC?: number;
+    temperatureF?: number;
+    summary?: string;
 }

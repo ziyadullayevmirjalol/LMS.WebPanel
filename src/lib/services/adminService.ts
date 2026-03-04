@@ -3,24 +3,26 @@ import type { PublisherDto } from '@/types/dtos';
 
 export const adminService = {
     /**
-     * GET /api/admin/publishers/pending
+     * GET /api/Admin/publishers/pending
      */
     async getPendingPublishers(): Promise<PublisherDto[]> {
-        const response = await api.get<PublisherDto[]>('/admin/publishers/pending');
+        const response = await api.get<PublisherDto[]>('/Admin/publishers/pending');
         return response.data;
     },
 
     /**
-     * POST /api/admin/publishers/{id}/approve
+     * POST /api/Admin/publishers/{id}/approve
      */
     async approvePublisher(id: string): Promise<void> {
-        await api.post(`/admin/publishers/${id}/approve`);
+        const response = await api.post(`/Admin/publishers/${id}/approve`);
+        return response?.data;
     },
 
     /**
-     * POST /api/admin/publishers/{id}/reject
+     * POST /api/Admin/publishers/{id}/reject
      */
     async rejectPublisher(id: string): Promise<void> {
-        await api.post(`/admin/publishers/${id}/reject`);
+        const response = await api.post(`/Admin/publishers/${id}/reject`);
+        return response?.data;
     },
 };

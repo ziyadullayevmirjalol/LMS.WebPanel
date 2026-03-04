@@ -9,11 +9,11 @@ import { quizService } from '@/lib/services/quizService';
 import type {
     LessonDto,
     ContentBlockDto,
-    CreateContentBlockDto,
-    ContentBlockType,
+    ContentBlockCreateDto,
     QuizQuestionDto,
-    CreateQuizQuestionDto,
+    QuizQuestionCreateDto,
 } from '@/types/dtos';
+import { ContentType } from '@/types/dtos';
 import {
     FileText,
     Video,
@@ -28,18 +28,18 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 
-const blockTypeIcons: Record<ContentBlockType, React.ReactNode> = {
-    Text: <FileText size={16} className="text-blue-400" />,
-    Video: <Video size={16} className="text-rose-400" />,
-    Quiz: <Puzzle size={16} className="text-amber-400" />,
-    Pdf: <File size={16} className="text-emerald-400" />,
+const blockTypeIcons: Record<ContentType, React.ReactNode> = {
+    [ContentType.Text]: <FileText size={16} className="text-blue-400" />,
+    [ContentType.Video]: <Video size={16} className="text-rose-400" />,
+    [ContentType.Quiz]: <Puzzle size={16} className="text-amber-400" />,
+    [ContentType.Pdf]: <File size={16} className="text-emerald-400" />,
 };
 
-const blockTypeColors: Record<ContentBlockType, string> = {
-    Text: 'bg-blue-500/10 border-blue-500/20 text-blue-400',
-    Video: 'bg-rose-500/10 border-rose-500/20 text-rose-400',
-    Quiz: 'bg-amber-500/10 border-amber-500/20 text-amber-400',
-    Pdf: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400',
+const blockTypeColors: Record<ContentType, string> = {
+    [ContentType.Text]: 'bg-blue-500/10 border-blue-500/20 text-blue-400',
+    [ContentType.Video]: 'bg-rose-500/10 border-rose-500/20 text-rose-400',
+    [ContentType.Quiz]: 'bg-amber-500/10 border-amber-500/20 text-amber-400',
+    [ContentType.Pdf]: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400',
 };
 
 export default function LessonDetailPage() {
@@ -54,10 +54,12 @@ export default function LessonDetailPage() {
     // Content block creation
     const [showBlockModal, setShowBlockModal] = useState(false);
     const [blockLoading, setBlockLoading] = useState(false);
-    const [newBlock, setNewBlock] = useState<Omit<CreateContentBlockDto, 'lessonId'>>({
-        type: 'Text',
-        content: '',
-        order: 0,
+    const [newBlock, setNewBlock] = useState<ContentBlockCreateDto>({
+        lessonId: lessonId,
+        type: ContentType.Text,
+        contentText: '',
+        mediaUrl: '',
+        orderIndex: 0,
     });
 
     // Quiz management
@@ -67,16 +69,13 @@ export default function LessonDetailPage() {
     );
     const [showQuizModal, setShowQuizModal] = useState<string | null>(null);
     const [quizLoading, setQuizLoading] = useState(false);
-    const [newQuestion, setNewQuestion] = useState<
-        Omit<CreateQuizQuestionDto, 'contentBlockId'>
-    >({
+    const [newQuestion, setNewQuestion] = useState<Omit<QuizQuestionCreateDto, 'contentBlockId'>>({
         questionText: '',
-        options: [
-            { text: '', isCorrect: true },
-            { text: '', isCorrect: false },
-            { text: '', isCorrect: false },
-            { text: '', isCorrect: false },
-        ],
+        optionA: '',
+        optionB: '',
+        optionC: '',
+        optionD: '',
+        correctOption: 'A',
         explanation: '',
     });
 
@@ -107,10 +106,10 @@ export default function LessonDetailPage() {
             const created = await contentBlockService.create({
                 ...newBlock,
                 lessonId,
-                order: blocks.length + 1,
+                orderIndex: blocks.length + 1,
             });
             setBlocks((prev) => [...prev, created]);
-            setNewBlock({ type: 'Text', content: '', order: 0 });
+            setNewBlock({ lessonId: lessonId, type: ContentType.Text, contentText: '', mediaUrl: '', orderIndex: 0 });
             setShowBlockModal(false);
         } catch {
             setError('Failed to create content block.');
@@ -148,12 +147,11 @@ export default function LessonDetailPage() {
             }));
             setNewQuestion({
                 questionText: '',
-                options: [
-                    { text: '', isCorrect: true },
-                    { text: '', isCorrect: false },
-                    { text: '', isCorrect: false },
-                    { text: '', isCorrect: false },
-                ],
+                optionA: '',
+                optionB: '',
+                optionC: '',
+                optionD: '',
+                correctOption: 'A',
                 explanation: '',
             });
             setShowQuizModal(null);
@@ -217,7 +215,7 @@ export default function LessonDetailPage() {
                         ) : (
                             <div className="space-y-3">
                                 {blocks
-                                    .sort((a, b) => a.order - b.order)
+                                    .sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0))
                                     .map((block, idx) => (
                                         <div key={block.id}>
                                             <div className="bg-slate-900 rounded-xl border border-slate-800 p-5 hover:border-slate-700 transition">
@@ -233,11 +231,11 @@ export default function LessonDetailPage() {
                                                             <span
                                                                 className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border ${blockTypeColors[block.type]}`}
                                                             >
-                                                                {block.type}
+                                                                {ContentType[block.type]}
                                                             </span>
                                                         </div>
                                                     </div>
-                                                    {block.type === 'Quiz' && (
+                                                    {block.type === ContentType.Quiz && (
                                                         <button
                                                             onClick={() => handleLoadQuizQuestions(block.id)}
                                                             className="inline-flex items-center gap-1 text-sm font-medium text-indigo-400 hover:text-indigo-300 transition"
@@ -254,13 +252,13 @@ export default function LessonDetailPage() {
                                                 </div>
                                                 <div className="mt-3 text-sm text-slate-300 bg-slate-800/50 rounded-lg p-3 max-h-32 overflow-auto">
                                                     <pre className="whitespace-pre-wrap font-sans">
-                                                        {block.content}
+                                                        {block.type === ContentType.Text || block.type === ContentType.Quiz ? block.contentText : block.mediaUrl}
                                                     </pre>
                                                 </div>
                                             </div>
 
                                             {/* Quiz Questions Expansion */}
-                                            {block.type === 'Quiz' && expandedQuizBlock === block.id && (
+                                            {block.type === ContentType.Quiz && expandedQuizBlock === block.id && (
                                                 <div className="ml-14 mt-2 space-y-2">
                                                     {(quizQuestions[block.id] || []).map((q, qIdx) => (
                                                         <div
@@ -271,18 +269,22 @@ export default function LessonDetailPage() {
                                                                 Q{qIdx + 1}: {q.questionText}
                                                             </p>
                                                             <div className="space-y-1">
-                                                                {q.options.map((opt, oIdx) => (
-                                                                    <div
-                                                                        key={oIdx}
-                                                                        className={`text-xs px-2 py-1 rounded ${opt.isCorrect
-                                                                                ? 'bg-emerald-500/10 text-emerald-300'
-                                                                                : 'text-slate-400'
-                                                                            }`}
-                                                                    >
-                                                                        {String.fromCharCode(65 + oIdx)}. {opt.text}
-                                                                        {opt.isCorrect && ' ✓'}
+                                                                <div className={`text-xs px-2 py-1 rounded ${q.correctOption === 'A' ? 'bg-emerald-500/10 text-emerald-300' : 'text-slate-400'}`}>
+                                                                    A. {q.optionA} {q.correctOption === 'A' && ' ✓'}
+                                                                </div>
+                                                                <div className={`text-xs px-2 py-1 rounded ${q.correctOption === 'B' ? 'bg-emerald-500/10 text-emerald-300' : 'text-slate-400'}`}>
+                                                                    B. {q.optionB} {q.correctOption === 'B' && ' ✓'}
+                                                                </div>
+                                                                {q.optionC && (
+                                                                    <div className={`text-xs px-2 py-1 rounded ${q.correctOption === 'C' ? 'bg-emerald-500/10 text-emerald-300' : 'text-slate-400'}`}>
+                                                                        C. {q.optionC} {q.correctOption === 'C' && ' ✓'}
                                                                     </div>
-                                                                ))}
+                                                                )}
+                                                                {q.optionD && (
+                                                                    <div className={`text-xs px-2 py-1 rounded ${q.correctOption === 'D' ? 'bg-emerald-500/10 text-emerald-300' : 'text-slate-400'}`}>
+                                                                        D. {q.optionD} {q.correctOption === 'D' && ' ✓'}
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                             {q.explanation && (
                                                                 <p className="text-xs text-slate-500 mt-2 italic">
@@ -332,15 +334,15 @@ export default function LessonDetailPage() {
                                         onChange={(e) =>
                                             setNewBlock((prev) => ({
                                                 ...prev,
-                                                type: e.target.value as ContentBlockType,
+                                                type: Number(e.target.value) as ContentType,
                                             }))
                                         }
                                         className="block w-full rounded-lg py-2.5 px-3 bg-slate-800 border border-slate-700 text-white text-sm transition"
                                     >
-                                        <option value="Text">Text</option>
-                                        <option value="Video">Video</option>
-                                        <option value="Quiz">Quiz</option>
-                                        <option value="Pdf">PDF</option>
+                                        <option value={ContentType.Text}>Text</option>
+                                        <option value={ContentType.Video}>Video</option>
+                                        <option value={ContentType.Quiz}>Quiz</option>
+                                        <option value={ContentType.Pdf}>PDF</option>
                                     </select>
                                 </div>
                                 <div>
@@ -352,18 +354,23 @@ export default function LessonDetailPage() {
                                         rows={5}
                                         className="block w-full rounded-lg py-2.5 px-3 bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm transition resize-none font-mono"
                                         placeholder={
-                                            newBlock.type === 'Text'
-                                                ? 'Enter text content or HTML...'
-                                                : newBlock.type === 'Video'
+                                            newBlock.type === ContentType.Text
+                                                ? 'Enter text content...'
+                                                : newBlock.type === ContentType.Video
                                                     ? 'Enter video URL...'
-                                                    : newBlock.type === 'Pdf'
+                                                    : newBlock.type === ContentType.Pdf
                                                         ? 'Enter PDF URL...'
                                                         : 'Quiz block — add questions after creating'
                                         }
-                                        value={newBlock.content}
-                                        onChange={(e) =>
-                                            setNewBlock((prev) => ({ ...prev, content: e.target.value }))
-                                        }
+                                        value={(newBlock.type === ContentType.Text || newBlock.type === ContentType.Quiz ? newBlock.contentText : newBlock.mediaUrl) || ''}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            if (newBlock.type === ContentType.Text || newBlock.type === ContentType.Quiz) {
+                                                setNewBlock((prev) => ({ ...prev, contentText: val, mediaUrl: '' }));
+                                            } else {
+                                                setNewBlock((prev) => ({ ...prev, mediaUrl: val, contentText: '' }));
+                                            }
+                                        }}
                                     />
                                 </div>
                                 <div className="flex gap-3 pt-2">
@@ -423,38 +430,35 @@ export default function LessonDetailPage() {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                                        Options (mark the correct answer)
+                                        Options
                                     </label>
-                                    <div className="space-y-2">
-                                        {newQuestion.options.map((opt, idx) => (
-                                            <div key={idx} className="flex items-center gap-2">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
+                                    <div className="space-y-4">
+                                        {(['A', 'B', 'C', 'D'] as const).map((optStr) => (
+                                            <div key={optStr} className="flex items-center gap-2">
+                                                <input
+                                                    type="radio"
+                                                    name="correctOption"
+                                                    checked={newQuestion.correctOption === optStr}
+                                                    onChange={() =>
                                                         setNewQuestion((prev) => ({
                                                             ...prev,
-                                                            options: prev.options.map((o, i) => ({
-                                                                ...o,
-                                                                isCorrect: i === idx,
-                                                            })),
-                                                        }));
-                                                    }}
-                                                    className={`h-5 w-5 rounded-full border-2 flex-shrink-0 transition ${opt.isCorrect
-                                                            ? 'border-emerald-400 bg-emerald-400'
-                                                            : 'border-slate-600 hover:border-slate-400'
-                                                        }`}
+                                                            correctOption: optStr,
+                                                        }))
+                                                    }
+                                                    className="w-4 h-4 text-emerald-500 bg-slate-800 border-slate-700 focus:ring-emerald-500"
                                                 />
                                                 <input
                                                     type="text"
-                                                    required
+                                                    required={optStr === 'A' || optStr === 'B'} // Minimum 2 options
                                                     className="flex-1 rounded-lg py-2 px-3 bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-sm transition"
-                                                    placeholder={`Option ${String.fromCharCode(65 + idx)}`}
-                                                    value={opt.text}
-                                                    onChange={(e) => {
-                                                        const updated = [...newQuestion.options];
-                                                        updated[idx] = { ...updated[idx], text: e.target.value };
-                                                        setNewQuestion((prev) => ({ ...prev, options: updated }));
-                                                    }}
+                                                    placeholder={`Option ${optStr}`}
+                                                    value={newQuestion[`option${optStr}` as keyof typeof newQuestion] as string}
+                                                    onChange={(e) =>
+                                                        setNewQuestion((prev) => ({
+                                                            ...prev,
+                                                            [`option${optStr}`]: e.target.value,
+                                                        }))
+                                                    }
                                                 />
                                             </div>
                                         ))}

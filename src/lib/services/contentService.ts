@@ -1,30 +1,30 @@
 import api from '@/lib/api';
 import type {
     SubjectDto,
-    CreateSubjectDto,
+    SubjectCreateDto,
     ModuleDto,
-    CreateModuleDto,
+    ModuleCreateDto,
     LessonDto,
-    CreateLessonDto,
+    LessonCreateDto,
     ContentBlockDto,
-    CreateContentBlockDto,
+    ContentBlockCreateDto,
 } from '@/types/dtos';
 
 // ── Subjects ──
 
 export const subjectService = {
     async getAll(): Promise<SubjectDto[]> {
-        const response = await api.get<SubjectDto[]>('/subjects');
+        const response = await api.get<SubjectDto[]>('/Subjects');
         return response.data;
     },
 
     async getById(id: string): Promise<SubjectDto> {
-        const response = await api.get<SubjectDto>(`/subjects/${id}`);
+        const response = await api.get<SubjectDto>(`/Subjects/${id}`);
         return response.data;
     },
 
-    async create(dto: CreateSubjectDto): Promise<SubjectDto> {
-        const response = await api.post<SubjectDto>('/subjects', dto);
+    async create(dto: SubjectCreateDto): Promise<SubjectDto> {
+        const response = await api.post<SubjectDto>('/Subjects', dto);
         return response.data;
     },
 };
@@ -33,17 +33,17 @@ export const subjectService = {
 
 export const moduleService = {
     async getBySubject(subjectId: string): Promise<ModuleDto[]> {
-        const response = await api.get<ModuleDto[]>(`/modules/subject/${subjectId}`);
+        const response = await api.get<ModuleDto[]>(`/Modules/subject/${subjectId}`);
         return response.data;
     },
 
     async getById(id: string): Promise<ModuleDto> {
-        const response = await api.get<ModuleDto>(`/modules/${id}`);
+        const response = await api.get<ModuleDto>(`/Modules/${id}`);
         return response.data;
     },
 
-    async create(dto: CreateModuleDto): Promise<ModuleDto> {
-        const response = await api.post<ModuleDto>('/modules', dto);
+    async create(dto: ModuleCreateDto): Promise<ModuleDto> {
+        const response = await api.post<ModuleDto>('/Modules', dto);
         return response.data;
     },
 };
@@ -52,17 +52,17 @@ export const moduleService = {
 
 export const lessonService = {
     async getByModule(moduleId: string): Promise<LessonDto[]> {
-        const response = await api.get<LessonDto[]>(`/lessons/module/${moduleId}`);
+        const response = await api.get<LessonDto[]>(`/Lessons/module/${moduleId}`);
         return response.data;
     },
 
     async getById(id: string): Promise<LessonDto> {
-        const response = await api.get<LessonDto>(`/lessons/${id}`);
+        const response = await api.get<LessonDto>(`/Lessons/${id}`);
         return response.data;
     },
 
-    async create(dto: CreateLessonDto): Promise<LessonDto> {
-        const response = await api.post<LessonDto>('/lessons', dto);
+    async create(dto: LessonCreateDto): Promise<LessonDto> {
+        const response = await api.post<LessonDto>('/Lessons', dto);
         return response.data;
     },
 };
@@ -71,17 +71,17 @@ export const lessonService = {
 
 export const contentBlockService = {
     async getByLesson(lessonId: string): Promise<ContentBlockDto[]> {
-        const response = await api.get<ContentBlockDto[]>(`/contentblocks/lesson/${lessonId}`);
+        const response = await api.get<ContentBlockDto[]>(`/ContentBlocks/lesson/${lessonId}`);
         return response.data;
     },
 
     async getById(id: string): Promise<ContentBlockDto> {
-        const response = await api.get<ContentBlockDto>(`/contentblocks/${id}`);
+        const response = await api.get<ContentBlockDto>(`/ContentBlocks/${id}`);
         return response.data;
     },
 
-    async create(dto: CreateContentBlockDto): Promise<ContentBlockDto> {
-        const response = await api.post<ContentBlockDto>('/contentblocks', dto);
+    async create(dto: ContentBlockCreateDto): Promise<ContentBlockDto> {
+        const response = await api.post<ContentBlockDto>('/ContentBlocks', dto);
         return response.data;
     },
 };

@@ -9,31 +9,31 @@ import type {
 
 export const authService = {
     /**
-     * POST /api/auth/login
+     * POST /api/Auth/login
      */
     async login(dto: LoginDto): Promise<AuthResponseDto> {
-        const response = await api.post<AuthResponseDto>('/auth/login', dto);
+        const response = await api.post<AuthResponseDto>('/Auth/login', dto);
         const { accessToken, refreshToken } = response.data;
         tokenManager.setTokens(accessToken, refreshToken);
         return response.data;
     },
 
     /**
-     * POST /api/auth/register/publisher
+     * POST /api/Auth/register/publisher
      */
     async registerPublisher(dto: RegisterDto): Promise<void> {
-        await api.post('/auth/register/publisher', dto);
+        await api.post('/Auth/register/publisher', dto);
     },
 
     /**
-     * POST /api/auth/register/student
+     * POST /api/Auth/register/student
      */
     async registerStudent(dto: RegisterDto): Promise<void> {
-        await api.post('/auth/register/student', dto);
+        await api.post('/Auth/register/student', dto);
     },
 
     /**
-     * POST /api/auth/refresh
+     * POST /api/Auth/refresh
      * Returns new tokens; also updates the token manager.
      */
     async refreshToken(): Promise<RefreshResponseDto | null> {
@@ -41,9 +41,7 @@ export const authService = {
         if (!currentRefresh) return null;
 
         try {
-            const response = await api.post<RefreshResponseDto>('/auth/refresh', {
-                refreshToken: currentRefresh,
-            });
+            const response = await api.post<RefreshResponseDto>('/Auth/refresh', currentRefresh);
             const { accessToken, refreshToken } = response.data;
             tokenManager.setTokens(accessToken, refreshToken);
             return response.data;
@@ -54,14 +52,14 @@ export const authService = {
     },
 
     /**
-     * POST /api/auth/revoke
+     * POST /api/Auth/revoke
      */
     async revokeToken(): Promise<void> {
         const currentRefresh = tokenManager.getRefreshToken();
         if (!currentRefresh) return;
 
         try {
-            await api.post('/auth/revoke', { refreshToken: currentRefresh });
+            await api.post('/Auth/revoke', currentRefresh);
         } finally {
             tokenManager.clearTokens();
         }

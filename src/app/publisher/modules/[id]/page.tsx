@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import DashboardLayout, { publisherNavItems } from '@/components/DashboardLayout';
 import { moduleService, lessonService } from '@/lib/services/contentService';
-import type { ModuleDto, LessonDto, CreateLessonDto } from '@/types/dtos';
+import type { ModuleDto, LessonDto, LessonCreateDto } from '@/types/dtos';
 import {
     FileText,
     PlusCircle,
@@ -27,10 +27,9 @@ export default function ModuleDetailPage() {
     const [error, setError] = useState('');
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [createLoading, setCreateLoading] = useState(false);
-    const [newLesson, setNewLesson] = useState<Omit<CreateLessonDto, 'moduleId'>>({
+    const [newLesson, setNewLesson] = useState<Omit<LessonCreateDto, 'moduleId'>>({
         title: '',
-        description: '',
-        order: 0,
+        orderIndex: 0,
     });
 
     const fetchData = useCallback(async () => {
@@ -60,10 +59,10 @@ export default function ModuleDetailPage() {
             const created = await lessonService.create({
                 ...newLesson,
                 moduleId,
-                order: lessons.length + 1,
+                orderIndex: lessons.length + 1,
             });
             setLessons((prev) => [...prev, created]);
-            setNewLesson({ title: '', description: '', order: 0 });
+            setNewLesson({ title: '', orderIndex: 0 });
             setShowCreateModal(false);
         } catch {
             setError('Failed to create lesson.');
@@ -129,7 +128,7 @@ export default function ModuleDetailPage() {
                         ) : (
                             <div className="space-y-3">
                                 {lessons
-                                    .sort((a, b) => a.order - b.order)
+                                    .sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0))
                                     .map((lesson, idx) => (
                                         <div
                                             key={lesson.id}
@@ -193,23 +192,7 @@ export default function ModuleDetailPage() {
                                         }
                                     />
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                                        Description
-                                    </label>
-                                    <textarea
-                                        rows={3}
-                                        className="block w-full rounded-lg py-2.5 px-3 bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm transition resize-none"
-                                        placeholder="What will this lesson teach?"
-                                        value={newLesson.description}
-                                        onChange={(e) =>
-                                            setNewLesson((prev) => ({
-                                                ...prev,
-                                                description: e.target.value,
-                                            }))
-                                        }
-                                    />
-                                </div>
+
                                 <div className="flex gap-3 pt-2">
                                     <button
                                         type="button"

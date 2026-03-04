@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import DashboardLayout, { publisherNavItems } from '@/components/DashboardLayout';
 import { subjectService, moduleService } from '@/lib/services/contentService';
-import type { SubjectDto, ModuleDto, CreateModuleDto } from '@/types/dtos';
+import type { SubjectDto, ModuleDto, ModuleCreateDto } from '@/types/dtos';
 import {
     Layers,
     PlusCircle,
@@ -27,10 +27,9 @@ export default function SubjectDetailPage() {
     const [error, setError] = useState('');
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [createLoading, setCreateLoading] = useState(false);
-    const [newModule, setNewModule] = useState<Omit<CreateModuleDto, 'subjectId'>>({
+    const [newModule, setNewModule] = useState<Omit<ModuleCreateDto, 'subjectId'>>({
         title: '',
-        description: '',
-        order: 0,
+        orderIndex: 0,
     });
 
     const fetchData = useCallback(async () => {
@@ -60,10 +59,10 @@ export default function SubjectDetailPage() {
             const created = await moduleService.create({
                 ...newModule,
                 subjectId,
-                order: modules.length + 1,
+                orderIndex: modules.length + 1,
             });
             setModules((prev) => [...prev, created]);
-            setNewModule({ title: '', description: '', order: 0 });
+            setNewModule({ title: '', orderIndex: 0 });
             setShowCreateModal(false);
         } catch {
             setError('Failed to create module.');
@@ -127,7 +126,7 @@ export default function SubjectDetailPage() {
                         ) : (
                             <div className="space-y-3">
                                 {modules
-                                    .sort((a, b) => a.order - b.order)
+                                    .sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0))
                                     .map((mod, idx) => (
                                         <div
                                             key={mod.id}
@@ -191,23 +190,7 @@ export default function SubjectDetailPage() {
                                         }
                                     />
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                                        Description
-                                    </label>
-                                    <textarea
-                                        rows={3}
-                                        className="block w-full rounded-lg py-2.5 px-3 bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm transition resize-none"
-                                        placeholder="What does this module cover?"
-                                        value={newModule.description}
-                                        onChange={(e) =>
-                                            setNewModule((prev) => ({
-                                                ...prev,
-                                                description: e.target.value,
-                                            }))
-                                        }
-                                    />
-                                </div>
+
                                 <div className="flex gap-3 pt-2">
                                     <button
                                         type="button"
