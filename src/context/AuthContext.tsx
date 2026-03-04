@@ -77,9 +77,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // ── Restore session on mount ──
     useEffect(() => {
         const restoreSession = async () => {
+            console.log('[AuthContext] restoreSession started');
             // If we still have an access token in memory, use it
             const existingToken = tokenManager.getAccessToken();
             if (existingToken && !tokenManager.isAccessTokenExpired()) {
+                console.log('[AuthContext] Found valid access token in memory');
                 const u = userFromToken(existingToken);
                 setUser(u);
                 setIsLoading(false);
@@ -89,20 +91,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // Otherwise try to refresh using stored refresh token
             const refreshToken = tokenManager.getRefreshToken();
             if (refreshToken) {
+                console.log('[AuthContext] Found refresh token, attempting refresh');
                 try {
                     const result = await authService.refreshToken();
                     if (result) {
+                        console.log('[AuthContext] Refresh succeeded');
                         const u = userFromToken(result.accessToken);
                         setUser(u);
                         setIsLoading(false);
                         return;
+                    } else {
+                        console.log('[AuthContext] Refresh returned no result');
                     }
-                } catch {
+                } catch (err) {
+                    console.error('[AuthContext] Refresh failed error:', err);
                     // Refresh failed — clear everything
                     tokenManager.clearTokens();
                 }
+            } else {
+                console.log('[AuthContext] No refresh token found');
             }
 
+            console.log('[AuthContext] No session restored, setting user to null');
             setUser(null);
             setIsLoading(false);
         };

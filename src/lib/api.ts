@@ -34,6 +34,7 @@ api.interceptors.request.use(
         if (token && config.headers) {
             config.headers.Authorization = `Bearer ${token}`;
         }
+        console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`);
         return config;
     },
     (error) => Promise.reject(error)
@@ -41,7 +42,10 @@ api.interceptors.request.use(
 
 // ── Response interceptor: handle 401 with token refresh ──
 api.interceptors.response.use(
-    (response) => response,
+    (response) => {
+        console.log(`[API Response] ${response.status} ${response.config.url}`);
+        return response;
+    },
     async (error) => {
         const originalRequest = error.config;
 
@@ -49,8 +53,9 @@ api.interceptors.response.use(
         if (
             error.response?.status !== 401 ||
             originalRequest._retry ||
-            originalRequest.url?.includes('/auth/')
+            originalRequest.url?.includes('/Auth/')
         ) {
+            console.warn(`[API Error] ${error.response?.status} ${error.config.url}`, error.response?.data);
             return Promise.reject(error);
         }
 
@@ -78,8 +83,8 @@ api.interceptors.response.use(
 
         try {
             const { data } = await axios.post(
-                `${api.defaults.baseURL}/auth/refresh`,
-                { refreshToken },
+                `${api.defaults.baseURL}/Auth/refresh`,
+                JSON.stringify(refreshToken),
                 { headers: { 'Content-Type': 'application/json' } }
             );
 

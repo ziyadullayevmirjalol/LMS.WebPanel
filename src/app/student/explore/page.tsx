@@ -29,14 +29,17 @@ export default function StudentExplorePage() {
         setLoading(true);
         setError('');
         try {
+            console.log('[Explore] Fetching data...');
             const [allSubjects, enrollments] = await Promise.all([
                 subjectService.getAll(),
                 user ? enrollmentService.getByStudent(user.id) : Promise.resolve([]),
             ]);
+            console.log('[Explore] Subjects fetched:', allSubjects);
+            console.log('[Explore] Enrollments fetched:', enrollments);
             setSubjects(allSubjects);
             setMyEnrollments(enrollments);
         } catch (err) {
-            console.error(err);
+            console.error('[Explore] Fetch error:', err);
             setError('Failed to load courses.');
         } finally {
             setLoading(false);
@@ -124,8 +127,8 @@ export default function StudentExplorePage() {
                                         <Link
                                             href={`/student/subjects/${subject.id}`}
                                             className={`inline-flex items-center gap-1 text-sm font-semibold transition px-4 py-2 rounded-lg ${isEnrolled(subject.id)
-                                                    ? 'text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20'
-                                                    : 'text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/20'
+                                                ? 'text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20'
+                                                : 'text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/20'
                                                 }`}
                                         >
                                             {isEnrolled(subject.id) ? 'Continue Learning' : 'View Details'}

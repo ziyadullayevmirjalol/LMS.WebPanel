@@ -41,11 +41,17 @@ export const authService = {
         if (!currentRefresh) return null;
 
         try {
-            const response = await api.post<RefreshResponseDto>('/Auth/refresh', { refreshToken: currentRefresh });
+            console.log('[Auth] Attempting token refresh...');
+            // ASP.NET [FromBody] string expects a raw JSON string
+            const response = await api.post<RefreshResponseDto>('/Auth/refresh', JSON.stringify(currentRefresh), {
+                headers: { 'Content-Type': 'application/json' }
+            });
             const { accessToken, refreshToken } = response.data;
             tokenManager.setTokens(accessToken, refreshToken);
+            console.log('[Auth] Token refresh succeeded');
             return response.data;
-        } catch {
+        } catch (err) {
+            console.warn('[Auth] Token refresh failed:', err);
             tokenManager.clearTokens();
             return null;
         }
@@ -59,7 +65,9 @@ export const authService = {
         if (!currentRefresh) return;
 
         try {
-            await api.post('/Auth/revoke', { refreshToken: currentRefresh });
+            await api.post('/Auth/revoke', JSON.stringify(currentRefresh), {
+                headers: { 'Content-Type': 'application/json' }
+            });
         } finally {
             tokenManager.clearTokens();
         }

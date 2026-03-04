@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 
-export default function PublisherDashboard() {
+export default function PublisherSubjectsPage() {
     const { user } = useAuth();
     const [subjects, setSubjects] = useState<SubjectDto[]>([]);
     const [loading, setLoading] = useState(true);
@@ -29,15 +29,18 @@ export default function PublisherDashboard() {
     });
 
     const fetchSubjects = useCallback(async () => {
-        console.log('[PublisherDashboard] Fetching subjects...');
+        console.log('[PublisherSubjectsPage] Fetching subjects...');
         setLoading(true);
         setError('');
         try {
+            // Check if there's a specialized "get my subjects" endpoint or if we filter
             const data = await subjectService.getAll();
-            console.log('[PublisherDashboard] Subjects fetched:', data);
+            console.log('[PublisherSubjectsPage] Subjects fetched:', data);
+            // Assuming for now getAll returns all, and we might need to filter by publisher if the API supports it
+            // or if the backend only returns relevant ones for the authenticated user.
             setSubjects(data);
         } catch (err) {
-            console.error('[PublisherDashboard] Fetch error:', err);
+            console.error('[PublisherSubjectsPage] Fetch error:', err);
             setError('Failed to load subjects.');
         } finally {
             setLoading(false);
@@ -56,7 +59,8 @@ export default function PublisherDashboard() {
             setSubjects((prev) => [created, ...prev]);
             setNewSubject({ title: '', description: '' });
             setShowCreateModal(false);
-        } catch {
+        } catch (err) {
+            console.error('Failed to create subject:', err);
             setError('Failed to create subject.');
         } finally {
             setCreateLoading(false);
@@ -65,13 +69,13 @@ export default function PublisherDashboard() {
 
     return (
         <ProtectedRoute allowedRoles={['Publisher']}>
-            <DashboardLayout title="Publisher" navItems={publisherNavItems}>
+            <DashboardLayout title="My Subjects" navItems={publisherNavItems}>
                 {/* Header */}
                 <div className="flex items-center justify-between mb-8">
                     <div>
                         <h1 className="text-2xl font-bold text-white">My Subjects</h1>
                         <p className="text-sm text-slate-400 mt-1">
-                            Manage your educational content
+                            Create and manage your educational content
                         </p>
                     </div>
                     <button
@@ -149,7 +153,7 @@ export default function PublisherDashboard() {
                     </div>
                 )}
 
-                {/* ── Create Subject Modal ── */}
+                {/* Create Subject Modal */}
                 {showCreateModal && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
                         <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6">
