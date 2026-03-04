@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { tokenManager } from '@/lib/tokenManager';
+import { getLoginPath } from '@/lib/getLoginPath';
 
 const api = axios.create({
     baseURL: process.env.NEXT_PUBLIC_API_URL || 'https://localhost:7193/api',
@@ -70,7 +71,7 @@ api.interceptors.response.use(
         if (!refreshToken) {
             tokenManager.clearTokens();
             if (typeof window !== 'undefined') {
-                window.location.href = '/login';
+                window.location.href = getLoginPath();
             }
             return Promise.reject(error);
         }
@@ -91,7 +92,7 @@ api.interceptors.response.use(
             processQueue(refreshError, null);
             tokenManager.clearTokens();
             if (typeof window !== 'undefined') {
-                window.location.href = '/login';
+                window.location.href = getLoginPath();
             }
             return Promise.reject(refreshError);
         } finally {

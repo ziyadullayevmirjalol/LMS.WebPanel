@@ -41,7 +41,7 @@ export const authService = {
         if (!currentRefresh) return null;
 
         try {
-            const response = await api.post<RefreshResponseDto>('/Auth/refresh', currentRefresh);
+            const response = await api.post<RefreshResponseDto>('/Auth/refresh', { refreshToken: currentRefresh });
             const { accessToken, refreshToken } = response.data;
             tokenManager.setTokens(accessToken, refreshToken);
             return response.data;
@@ -59,7 +59,7 @@ export const authService = {
         if (!currentRefresh) return;
 
         try {
-            await api.post('/Auth/revoke', currentRefresh);
+            await api.post('/Auth/revoke', { refreshToken: currentRefresh });
         } finally {
             tokenManager.clearTokens();
         }

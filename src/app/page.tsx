@@ -12,7 +12,7 @@ export default function Home() {
     if (isLoading) return;
 
     if (!user) {
-      router.replace('/login');
+      router.replace('/auth');
       return;
     }
 
@@ -25,7 +25,7 @@ export default function Home() {
         router.replace('/publisher');
         break;
       default:
-        router.replace('/login');
+        router.replace('/student');
         break;
     }
   }, [user, isLoading, router]);
@@ -39,3 +39,4 @@ export default function Home() {
     </div>
   );
 }
+

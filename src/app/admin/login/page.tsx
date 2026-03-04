@@ -1,15 +1,30 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { Lock, Mail, AlertCircle } from 'lucide-react';
+import { Lock, Mail, AlertCircle, ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
 
 export default function AdminLoginPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const { login } = useAuth();
+    const { user, login, isLoading: authLoading } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
+    const router = useRouter();
+
+    // Redirect when user state is set
+    useEffect(() => {
+        if (authLoading) return;
+        if (user) {
+            if (user.role === 'Admin') {
+                router.push('/admin');
+            } else {
+                setError(`You are logged in as ${user.role}, not Admin. Please use the correct login page.`);
+            }
+        }
+    }, [user, authLoading, router]);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -17,7 +32,15 @@ export default function AdminLoginPage() {
         setError('');
 
         try {
-            await login({ email, password });
+            const u = await login({ email, password });
+            if (!u) {
+                setError('Login succeeded but failed to read user data from token. Check console for JWT debug info.');
+                setIsLoading(false);
+            } else if (u.role !== 'Admin') {
+                setError(`This portal is for Admins only. You logged in as ${u.role}.`);
+                setIsLoading(false);
+            }
+            // If u.role === 'Admin', the useEffect above will handle redirect
         } catch (err: unknown) {
             const axiosError = err as { response?: { data?: { message?: string } } };
             setError(
@@ -112,8 +135,19 @@ export default function AdminLoginPage() {
                             </button>
                         </div>
                     </form>
+
+                    <div className="mt-6 text-center">
+                        <Link
+                            href="/auth"
+                            className="inline-flex items-center gap-2 text-sm font-medium text-red-300/70 hover:text-red-200 transition"
+                        >
+                            <ArrowLeft size={16} />
+                            Back to role selection
+                        </Link>
+                    </div>
                 </div>
             </div>
         </div>
     );
 }
+

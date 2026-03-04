@@ -1,16 +1,32 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { Lock, Mail, AlertCircle } from 'lucide-react';
+import { Lock, Mail, AlertCircle, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
 export default function StudentLoginPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const { login } = useAuth();
+    const { user, login, isLoading: authLoading } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
+    const router = useRouter();
+
+    // Redirect when user state is set
+    useEffect(() => {
+        if (authLoading) return;
+        if (user) {
+            if (user.role === 'Student') {
+                router.push('/student');
+            } else if (user.role === 'Admin') {
+                router.push('/admin');
+            } else if (user.role === 'Publisher') {
+                router.push('/publisher');
+            }
+        }
+    }, [user, authLoading, router]);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -18,7 +34,12 @@ export default function StudentLoginPage() {
         setError('');
 
         try {
-            await login({ email, password });
+            const u = await login({ email, password });
+            if (!u) {
+                setError('Login succeeded but failed to read user data from token. Check console for JWT debug info.');
+                setIsLoading(false);
+            }
+            // useEffect above will handle the redirect once user state is set
         } catch (err: unknown) {
             const axiosError = err as { response?: { data?: { message?: string } } };
             setError(
@@ -134,8 +155,19 @@ export default function StudentLoginPage() {
                             </Link>
                         </div>
                     </div>
+
+                    <div className="mt-4 text-center">
+                        <Link
+                            href="/auth"
+                            className="inline-flex items-center gap-2 text-sm font-medium text-cyan-300/70 hover:text-cyan-200 transition"
+                        >
+                            <ArrowLeft size={16} />
+                            Back to role selection
+                        </Link>
+                    </div>
                 </div>
             </div>
         </div>
     );
 }
+

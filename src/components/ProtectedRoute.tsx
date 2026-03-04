@@ -1,8 +1,9 @@
 'use client';
 
 import { useAuth } from '@/context/AuthContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useEffect } from 'react';
+import { getLoginPath } from '@/lib/getLoginPath';
 
 export default function ProtectedRoute({
     children,
@@ -13,16 +14,15 @@ export default function ProtectedRoute({
 }) {
     const { user, isLoading } = useAuth();
     const router = useRouter();
+    const pathname = usePathname();
 
     useEffect(() => {
         if (!isLoading) {
-            if (!user) {
-                router.push('/login');
-            } else if (!allowedRoles.includes(user.role)) {
-                router.push('/login');
+            if (!user || !allowedRoles.includes(user.role)) {
+                router.push(getLoginPath(pathname));
             }
         }
-    }, [user, isLoading, router, allowedRoles]);
+    }, [user, isLoading, router, allowedRoles, pathname]);
 
     if (isLoading || !user || !allowedRoles.includes(user.role)) {
         return (
