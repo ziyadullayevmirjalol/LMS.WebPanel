@@ -42,10 +42,7 @@ export const authService = {
 
         try {
             console.log('[Auth] Attempting token refresh...');
-            // ASP.NET [FromBody] string expects a raw JSON string
-            const response = await api.post<RefreshResponseDto>('/Auth/refresh', JSON.stringify(currentRefresh), {
-                headers: { 'Content-Type': 'application/json' }
-            });
+            const response = await api.post<RefreshResponseDto>('/Auth/refresh', { refreshToken: currentRefresh });
             const { accessToken, refreshToken } = response.data;
             tokenManager.setTokens(accessToken, refreshToken);
             console.log('[Auth] Token refresh succeeded');
@@ -65,9 +62,7 @@ export const authService = {
         if (!currentRefresh) return;
 
         try {
-            await api.post('/Auth/revoke', JSON.stringify(currentRefresh), {
-                headers: { 'Content-Type': 'application/json' }
-            });
+            await api.post('/Auth/revoke', { refreshToken: currentRefresh });
         } finally {
             tokenManager.clearTokens();
         }

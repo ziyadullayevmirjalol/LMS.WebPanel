@@ -23,9 +23,18 @@ export const subjectService = {
         return response.data;
     },
 
+    async getPublisherSubjects(): Promise<SubjectDto[]> {
+        const response = await api.get<SubjectDto[]>('/Subjects/publisher');
+        return response.data;
+    },
+
     async create(dto: SubjectCreateDto): Promise<SubjectDto> {
         const response = await api.post<SubjectDto>('/Subjects', dto);
         return response.data;
+    },
+
+    async publish(id: string): Promise<void> {
+        await api.post(`/Subjects/${id}/publish`);
     },
 };
 

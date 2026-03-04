@@ -33,7 +33,7 @@ export default function PublisherDashboard() {
         setLoading(true);
         setError('');
         try {
-            const data = await subjectService.getAll();
+            const data = await subjectService.getPublisherSubjects();
             console.log('[PublisherDashboard] Subjects fetched:', data);
             setSubjects(data);
         } catch (err) {
@@ -123,9 +123,17 @@ export default function PublisherDashboard() {
                                     <BookOpen className="h-10 w-10 text-indigo-500/30 group-hover:text-indigo-500/50 transition" />
                                 </div>
                                 <div className="p-5">
-                                    <h3 className="text-base font-semibold text-white mb-1 truncate">
-                                        {subject.title}
-                                    </h3>
+                                    <div className="flex items-center justify-between mb-2">
+                                        <h3 className="text-base font-semibold text-white mb-0 truncate">
+                                            {subject.title}
+                                        </h3>
+                                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${subject.isPublished
+                                                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                                                : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                                            }`}>
+                                            {subject.isPublished ? 'Published' : 'Draft'}
+                                        </span>
+                                    </div>
                                     <p className="text-sm text-slate-400 line-clamp-2 mb-4 min-h-[2.5rem]">
                                         {subject.description}
                                     </p>

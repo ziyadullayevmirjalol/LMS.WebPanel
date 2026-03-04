@@ -14,6 +14,7 @@ import {
     X,
     ArrowLeft,
     ExternalLink,
+    CheckCircle,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -31,6 +32,7 @@ export default function SubjectDetailPage() {
         title: '',
         orderIndex: 0,
     });
+    const [publishLoading, setPublishLoading] = useState(false);
 
     const fetchData = useCallback(async () => {
         setLoading(true);
@@ -51,6 +53,19 @@ export default function SubjectDetailPage() {
     useEffect(() => {
         fetchData();
     }, [fetchData]);
+
+    const handlePublish = async () => {
+        if (!subject) return;
+        setPublishLoading(true);
+        try {
+            await subjectService.publish(subjectId);
+            setSubject((prev) => prev ? { ...prev, isPublished: true } : null);
+        } catch {
+            setError('Failed to publish subject.');
+        } finally {
+            setPublishLoading(false);
+        }
+    };
 
     const handleCreateModule = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -89,21 +104,45 @@ export default function SubjectDetailPage() {
                 ) : (
                     <>
                         <div className="flex items-center justify-between mb-8">
-                            <div>
-                                <h1 className="text-2xl font-bold text-white">
-                                    {subject?.title}
-                                </h1>
-                                <p className="text-sm text-slate-400 mt-1">
-                                    {subject?.description}
-                                </p>
+                            <div className="flex items-start gap-3">
+                                <div className="mt-1">
+                                    <h1 className="text-2xl font-bold text-white flex items-center gap-3">
+                                        {subject?.title}
+                                        {subject?.isPublished && (
+                                            <span className="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-medium">
+                                                Published
+                                            </span>
+                                        )}
+                                        {!subject?.isPublished && (
+                                            <span className="text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded-full font-medium">
+                                                Draft
+                                            </span>
+                                        )}
+                                    </h1>
+                                    <p className="text-sm text-slate-400 mt-1">
+                                        {subject?.description}
+                                    </p>
+                                </div>
                             </div>
-                            <button
-                                onClick={() => setShowCreateModal(true)}
-                                className="inline-flex items-center gap-2 bg-indigo-600 text-white px-4 py-2.5 rounded-lg hover:bg-indigo-500 transition shadow-lg shadow-indigo-500/20 text-sm font-medium"
-                            >
-                                <PlusCircle size={16} />
-                                Add Module
-                            </button>
+                            <div className="flex items-center gap-3">
+                                {!subject?.isPublished && (
+                                    <button
+                                        onClick={handlePublish}
+                                        disabled={publishLoading}
+                                        className="inline-flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-lg hover:bg-emerald-500 transition shadow-lg shadow-emerald-500/20 text-sm font-medium disabled:opacity-50"
+                                    >
+                                        {publishLoading ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle size={16} />}
+                                        Publish
+                                    </button>
+                                )}
+                                <button
+                                    onClick={() => setShowCreateModal(true)}
+                                    className="inline-flex items-center gap-2 bg-indigo-600 text-white px-4 py-2.5 rounded-lg hover:bg-indigo-500 transition shadow-lg shadow-indigo-500/20 text-sm font-medium"
+                                >
+                                    <PlusCircle size={16} />
+                                    Add Module
+                                </button>
+                            </div>
                         </div>
 
                         {error && (

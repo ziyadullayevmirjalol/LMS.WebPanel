@@ -60,6 +60,7 @@ export interface SubjectDto {
     id: string;
     title: string;
     description: string;
+    isPublished: boolean;
     publisherId: string;
     publisherName?: string;
     createdAt?: string;
