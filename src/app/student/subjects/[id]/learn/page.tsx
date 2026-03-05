@@ -6,13 +6,12 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import { subjectService, moduleService, lessonService, contentBlockService } from '@/lib/services/contentService';
 import { enrollmentService } from '@/lib/services/enrollmentService';
 import { useAuth } from '@/context/AuthContext';
-import type { SubjectDto, ModuleDto, LessonDto, ContentBlockDto, EnrollmentDto, ContentType } from '@/types/dtos';
+import type { SubjectDto, ModuleDto, LessonDto, ContentBlockDto, EnrollmentDto } from '@/types/dtos';
 import {
     BookOpen,
     Loader2,
     AlertCircle,
     ArrowLeft,
-    CheckCircle,
     PlayCircle,
     ChevronDown,
     ChevronRight,
@@ -20,7 +19,8 @@ import {
     Video,
     FileCode,
     ExternalLink,
-    Puzzle
+    Puzzle,
+    List
 } from 'lucide-react';
 import Link from 'next/link';
 import VideoPlayer from '@/components/VideoPlayer';
@@ -40,6 +40,7 @@ export default function StudentLearningPage() {
 
     const [activeModuleId, setActiveModuleId] = useState<string | null>(null);
     const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
+    const [isCurriculumOpen, setIsCurriculumOpen] = useState(false);
 
     // Content state for active lesson
     const [contentBlocks, setContentBlocks] = useState<ContentBlockDto[]>([]);
@@ -115,6 +116,7 @@ export default function StudentLearningPage() {
 
     const handleSelectLesson = async (lessonId: string) => {
         setActiveLessonId(lessonId);
+        setIsCurriculumOpen(false); // Close on mobile after selection
         setContentLoading(true);
         try {
             const blocks = await contentBlockService.getByLesson(lessonId);
@@ -160,11 +162,17 @@ export default function StudentLearningPage() {
                         className="flex items-center gap-2 text-slate-400 hover:text-white transition group"
                     >
                         <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
-                        <span className="font-medium hidden sm:inline">Back to Course</span>
+                        <span className="font-medium hidden sm:inline text-sm">Back</span>
                     </Link>
                     <div className="mx-auto flex-1 text-center px-4 truncate">
                         <h1 className="text-sm font-bold text-white truncate">{subject?.title}</h1>
                     </div>
+                    <button
+                        onClick={() => setIsCurriculumOpen(!isCurriculumOpen)}
+                        className="md:hidden p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition"
+                    >
+                        <List size={20} />
+                    </button>
                 </header>
 
                 {error ? (
@@ -175,18 +183,27 @@ export default function StudentLearningPage() {
                         </div>
                     </div>
                 ) : (
-                    <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+                    <div className="flex-1 flex overflow-hidden relative">
                         {/* Sidebar Curriculum (Drawer on mobile, fixed on desktop) */}
-                        <div className="w-full md:w-80 lg:w-96 bg-slate-900 border-r border-slate-800 flex flex-col md:h-[calc(100vh-64px)] overflow-y-auto">
+                        <div
+                            className={`fixed flex flex-col inset-y-0 left-0 z-50 w-80 sm:w-96 bg-slate-900 border-r border-slate-800 transition-transform duration-300 ease-in-out transform 
+                                       ${isCurriculumOpen ? 'translate-x-0' : '-translate-x-full'} 
+                                       md:relative md:translate-x-0 md:flex`}
+                        >
+                            <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+                                <h2 className="font-bold text-white">Course Curriculum</h2>
+                                <button className="md:hidden text-slate-400" onClick={() => setIsCurriculumOpen(false)}>
+                                    <ChevronRight className="rotate-180" size={20} />
+                                </button>
+                            </div>
                             <div className="p-4 border-b border-slate-800">
-                                <h2 className="font-bold text-white mb-2">Course Content</h2>
                                 <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
                                     <div
-                                        className="h-full bg-emerald-500 rounded-full"
+                                        className="h-full bg-emerald-500 rounded-full transition-all duration-500"
                                         style={{ width: `${enrollment?.progress || 0}%` }}
                                     />
                                 </div>
-                                <p className="text-xs text-slate-400 mt-2 text-right">
+                                <p className="text-[10px] text-slate-500 mt-2 font-bold uppercase tracking-wider">
                                     {Math.round(enrollment?.progress || 0)}% Complete
                                 </p>
                             </div>
@@ -196,42 +213,39 @@ export default function StudentLearningPage() {
                                     <div key={module.id} className="border-b border-slate-800/50 last:border-0">
                                         <button
                                             onClick={() => handleModuleToggle(module.id)}
-                                            className={`w-full text-left px-4 py-3 flex items-start gap-3 hover:bg-slate-800/30 transition ${activeModuleId === module.id ? 'bg-slate-800/50' : ''
+                                            className={`w-full text-left px-4 py-4 flex items-start gap-3 hover:bg-slate-800/30 transition ${activeModuleId === module.id ? 'bg-slate-800/50' : ''
                                                 }`}
                                         >
                                             <div className="mt-1 text-slate-500">
-                                                {activeModuleId === module.id ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                                                {activeModuleId === module.id ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                                             </div>
                                             <div>
-                                                <h3 className="text-sm font-bold text-white">
-                                                    Module {mIdx + 1}: {module.title}
+                                                <h3 className="text-xs font-bold text-slate-300 uppercase tracking-tight">
+                                                    Module {mIdx + 1}
                                                 </h3>
-                                                {lessonsByModule[module.id] && (
-                                                    <p className="text-xs text-slate-500 mt-0.5">
-                                                        {lessonsByModule[module.id]?.length || 0} lessons
-                                                    </p>
-                                                )}
+                                                <p className="text-sm font-bold text-white mt-0.5 leading-snug">
+                                                    {module.title}
+                                                </p>
                                             </div>
                                         </button>
 
-                                        {/* Lessons List (Expanded Dropdown) */}
                                         {activeModuleId === module.id && lessonsByModule[module.id] && (
                                             <div className="bg-slate-900/50 py-1">
-                                                {lessonsByModule[module.id]?.map((lesson, lIdx) => (
+                                                {lessonsByModule[module.id]?.map((lesson) => (
                                                     <button
                                                         key={lesson.id}
                                                         onClick={() => handleSelectLesson(lesson.id)}
-                                                        className={`w-full text-left pl-10 pr-4 py-2.5 flex items-center gap-3 transition text-sm ${activeLessonId === lesson.id
+                                                        className={`w-full text-left pl-10 pr-4 py-3 flex items-center gap-3 transition text-sm ${activeLessonId === lesson.id
                                                             ? 'bg-indigo-500/10 border-l-2 border-indigo-500 text-white'
                                                             : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/30 border-l-2 border-transparent'
                                                             }`}
                                                     >
-                                                        <PlayCircle size={14} className={activeLessonId === lesson.id ? 'text-indigo-400' : 'text-slate-500'} />
-                                                        <span className="truncate flex-1">{lesson.title}</span>
+                                                        <PlayCircle size={14} className={activeLessonId === lesson.id ? 'text-indigo-400 shadow-[0_0_10px_rgba(99,102,241,0.3)]' : 'text-slate-600'} />
+                                                        <span className="truncate flex-1 font-medium">{lesson.title}</span>
                                                     </button>
                                                 ))}
                                                 {lessonsByModule[module.id]?.length === 0 && (
-                                                    <div className="pl-10 pr-4 py-2 text-xs text-slate-500 italic">
+                                                    <div className="pl-10 pr-4 py-3 text-xs text-slate-500 italic">
                                                         No lessons in this module yet.
                                                     </div>
                                                 )}
@@ -242,102 +256,126 @@ export default function StudentLearningPage() {
                             </div>
                         </div>
 
+                        {/* Mobile Backdrop Overlay */}
+                        {isCurriculumOpen && (
+                            <div
+                                className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden"
+                                onClick={() => setIsCurriculumOpen(false)}
+                            />
+                        )}
+
                         {/* Main Content Area */}
-                        <div className="flex-1 overflow-y-auto bg-slate-950 p-4 md:p-8 md:h-[calc(100vh-64px)] relative scroll-smooth focus:outline-none">
+                        <div className="flex-1 overflow-y-auto bg-slate-950 p-4 sm:p-6 lg:p-10 relative scroll-smooth overflow-x-hidden">
                             {contentLoading ? (
                                 <div className="flex items-center justify-center h-full">
                                     <Loader2 className="h-8 w-8 text-indigo-500 animate-spin" />
                                 </div>
                             ) : !activeLessonId ? (
                                 <div className="h-full flex flex-col items-center justify-center text-center max-w-md mx-auto py-20">
-                                    <BookOpen className="h-16 w-16 text-slate-800 mb-6" />
-                                    <h2 className="text-xl font-bold text-white mb-2">Select a lesson to begin</h2>
-                                    <p className="text-slate-500">
-                                        Choose a module and lesson from the sidebar to view its content.
+                                    <div className="h-20 w-20 rounded-3xl bg-slate-900 flex items-center justify-center mb-6 border border-slate-800 shadow-xl">
+                                        <BookOpen className="h-10 w-10 text-indigo-500/50" />
+                                    </div>
+                                    <h2 className="text-xl font-bold text-white mb-2">Ready to Start?</h2>
+                                    <p className="text-slate-500 text-sm leading-relaxed">
+                                        Select a lesson from the curriculum to begin your learning journey.
                                     </p>
+                                    <button
+                                        onClick={() => setIsCurriculumOpen(true)}
+                                        className="md:hidden mt-8 px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-sm shadow-xl shadow-indigo-500/20"
+                                    >
+                                        Browse Curriculum
+                                    </button>
                                 </div>
                             ) : contentBlocks.length === 0 ? (
                                 <div className="h-full flex flex-col items-center justify-center text-center max-w-md mx-auto py-20 bg-slate-900/50 rounded-3xl border border-slate-800 border-dashed">
                                     <FileText className="h-12 w-12 text-slate-700 mx-auto mb-4" />
                                     <h3 className="text-lg font-bold text-white mb-2">No content yet</h3>
-                                    <p className="text-slate-500 text-sm">
-                                        This lesson doesn't have any content blocks added yet. Please check back later.
+                                    <p className="text-slate-500 text-sm italic">
+                                        Content for this lesson is being prepared.
                                     </p>
                                 </div>
                             ) : (
-                                <div className="max-w-4xl mx-auto space-y-8 pb-32">
-                                    {/* Lesson Title header could go here, but omitted to save space since usually blocks explain everything */}
-
+                                <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8 pb-32">
                                     {contentBlocks.map((block) => (
-                                        <div key={block.id} className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-lg">
+                                        <div key={block.id} className="bg-slate-900 border border-slate-800 rounded-[2rem] overflow-hidden shadow-2xl">
                                             {/* Block Header */}
-                                            <div className="bg-slate-800/40 px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+                                            <div className="bg-slate-800/30 px-6 sm:px-8 py-4 border-b border-slate-800/50 flex items-center justify-between">
                                                 <div className="flex items-center gap-3">
-                                                    {renderBlockIcon(block.type)}
-                                                    <h3 className="font-bold text-white text-sm">
+                                                    <div className="p-2 rounded-xl bg-slate-950/50 border border-slate-800">
+                                                        {renderBlockIcon(block.type)}
+                                                    </div>
+                                                    <h3 className="font-bold text-white text-xs sm:text-sm tracking-wide uppercase">
                                                         {block.type === 0 && 'Reading Material'}
-                                                        {block.type === 1 && 'Video Lesson'}
+                                                        {block.type === 1 && 'Video Presentation'}
                                                         {block.type === 2 && 'Knowledge Check'}
-                                                        {block.type === 3 && 'Document'}
+                                                        {block.type === 3 && 'Resource'}
                                                     </h3>
                                                 </div>
                                             </div>
 
                                             {/* Block Content */}
-                                            <div className="p-6 md:p-8">
+                                            <div className="p-6 sm:p-10 lg:p-12">
                                                 {block.type === 0 && ( // Text
                                                     <div className="prose prose-invert max-w-none">
-                                                        <div className="whitespace-pre-wrap text-slate-300 leading-relaxed break-words font-medium">
+                                                        <div className="whitespace-pre-wrap text-slate-300 leading-[1.8] text-base sm:text-lg font-medium tracking-tight">
                                                             {block.contentText}
                                                         </div>
                                                     </div>
                                                 )}
 
                                                 {block.type === 1 && ( // Video
-                                                    <div className="aspect-video w-full rounded-xl overflow-hidden bg-black/50 mx-auto border border-slate-800 flex items-center justify-center">
+                                                    <div className="aspect-video w-full rounded-2xl overflow-hidden bg-black/50 mx-auto border border-slate-800 flex items-center justify-center shadow-2xl">
                                                         {block.mediaUrl ? (
                                                             <VideoPlayer
                                                                 url={block.mediaUrl}
                                                                 width="100%"
                                                                 height="100%"
                                                                 controls
-                                                                className="rounded-xl overflow-hidden"
+                                                                className="rounded-2xl"
                                                             />
                                                         ) : (
-                                                            <p className="text-slate-500 italic">No video URL provided.</p>
+                                                            <p className="text-slate-500 italic">No video source provided.</p>
                                                         )}
                                                     </div>
                                                 )}
 
                                                 {block.type === 3 && ( // PDF / Document
-                                                    <div className="flex flex-col items-center justify-center py-10 bg-slate-800/20 rounded-xl border border-slate-800 border-dashed">
-                                                        <FileCode size={48} className="text-emerald-500/50 mb-4" />
-                                                        <h4 className="text-white font-medium mb-2">Document Resource</h4>
+                                                    <div className="flex flex-col items-center justify-center py-12 bg-slate-800/10 rounded-3xl border border-slate-800 border-dashed">
+                                                        <div className="h-16 w-16 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 mb-6">
+                                                            <FileCode size={32} />
+                                                        </div>
+                                                        <h4 className="text-white font-bold mb-2">Downloadable Resource</h4>
+                                                        <p className="text-slate-500 text-sm mb-8 text-center px-6">Access additional documents related to this lesson.</p>
                                                         {block.mediaUrl ? (
                                                             <a
                                                                 href={block.mediaUrl}
                                                                 target="_blank"
                                                                 rel="noopener noreferrer"
-                                                                className="px-6 py-2.5 bg-emerald-600/10 text-emerald-400 hover:bg-emerald-600/20 border border-emerald-500/20 rounded-lg text-sm font-bold transition flex items-center gap-2"
+                                                                className="px-8 py-3.5 bg-emerald-600 text-white hover:bg-emerald-500 rounded-2xl text-sm font-black transition-all flex items-center gap-2 shadow-lg shadow-emerald-500/20"
                                                             >
-                                                                View Document <ExternalLink size={14} />
+                                                                View Document <ExternalLink size={16} />
                                                             </a>
                                                         ) : (
-                                                            <p className="text-slate-500 text-sm">No document URL provided.</p>
+                                                            <p className="text-slate-500 text-sm italic underline">Resource link missing</p>
                                                         )}
                                                     </div>
                                                 )}
 
                                                 {block.type === 2 && ( // Quiz
-                                                    <div className="bg-indigo-500/5 border border-indigo-500/10 rounded-2xl p-6 text-center">
-                                                        <Puzzle size={32} className="text-amber-400 mx-auto mb-4" />
-                                                        <h4 className="text-lg font-bold text-white mb-2">Quiz Module</h4>
-                                                        <p className="text-slate-400 text-sm mb-6">Test your knowledge on this topic.</p>
+                                                    <div className="bg-indigo-600/5 border border-indigo-500/20 rounded-[2.5rem] p-8 sm:p-12 text-center relative overflow-hidden group">
+                                                        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-indigo-500/20 transition-all" />
+                                                        <div className="h-20 w-20 rounded-3xl bg-indigo-600/10 flex items-center justify-center text-indigo-400 mx-auto mb-6 shadow-xl border border-indigo-500/20">
+                                                            <Puzzle size={40} />
+                                                        </div>
+                                                        <h4 className="text-2xl font-black text-white mb-3">Knowledge Check</h4>
+                                                        <p className="text-slate-400 text-sm mb-8 max-w-xs mx-auto-leading-relaxed">
+                                                            Quick quiz to test your understanding of the materials covered in this lesson.
+                                                        </p>
                                                         <Link
                                                             href={`/student/quiz/${block.id}`}
-                                                            className="inline-flex items-center gap-2 bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-indigo-500 transition shadow-lg shadow-indigo-500/20"
+                                                            className="inline-flex items-center gap-2 bg-indigo-600 text-white px-10 py-4 rounded-2xl font-black hover:bg-indigo-500 transition-all shadow-2xl shadow-indigo-500/40 hover:-translate-y-1 active:translate-y-0"
                                                         >
-                                                            Start Quiz
+                                                            Start Challenge
                                                         </Link>
                                                     </div>
                                                 )}

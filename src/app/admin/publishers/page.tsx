@@ -94,89 +94,91 @@ export default function AdminPublishersPage() {
                     </div>
                 ) : (
                     <div className="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="border-b border-slate-800 bg-slate-800/50">
-                                    <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                                        Publisher
-                                    </th>
-                                    <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                                        Status
-                                    </th>
-                                    <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                                        Joined
-                                    </th>
-                                    <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">
-                                        Actions
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-800">
-                                {publishers.map((pub) => (
-                                    <tr key={pub.id} className="hover:bg-slate-800/30 transition">
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="h-9 w-9 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-400 font-bold text-sm">
-                                                    {pub.fullName.charAt(0).toUpperCase()}
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse min-w-[600px]">
+                                <thead>
+                                    <tr className="border-b border-slate-800 bg-slate-800/50">
+                                        <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">
+                                            Publisher
+                                        </th>
+                                        <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">
+                                            Status
+                                        </th>
+                                        <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">
+                                            Joined
+                                        </th>
+                                        <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right whitespace-nowrap">
+                                            Actions
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-800">
+                                    {publishers.map((pub) => (
+                                        <tr key={pub.id} className="hover:bg-slate-800/30 transition">
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="h-9 w-9 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-400 font-bold text-sm shrink-0">
+                                                        {pub.fullName.charAt(0).toUpperCase()}
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm font-medium text-white truncate max-w-[150px]">
+                                                            {pub.fullName}
+                                                        </p>
+                                                        <p className="text-xs text-slate-500 truncate max-w-[150px]">
+                                                            {pub.email}
+                                                        </p>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <p className="text-sm font-medium text-white">
-                                                        {pub.fullName}
-                                                    </p>
-                                                    <p className="text-xs text-slate-500">
-                                                        {pub.email}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            {pub.isApproved ? (
-                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                                                    <CheckCircle size={12} />
-                                                    Approved
-                                                </span>
-                                            ) : (
-                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                                                    <AlertCircle size={12} />
-                                                    Pending
-                                                </span>
-                                            )}
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-slate-400 text-nowrap">
-                                            {pub.createdAt ? new Date(pub.createdAt).toLocaleDateString() : 'N/A'}
-                                        </td>
-                                        <td className="px-6 py-4 text-right space-x-2">
-                                            {!pub.isApproved && (
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                {pub.isApproved ? (
+                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                                        <CheckCircle size={12} />
+                                                        Approved
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                                        <AlertCircle size={12} />
+                                                        Pending
+                                                    </span>
+                                                )}
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-slate-400 whitespace-nowrap">
+                                                {pub.createdAt ? new Date(pub.createdAt).toLocaleDateString() : 'N/A'}
+                                            </td>
+                                            <td className="px-6 py-4 text-right space-x-2 whitespace-nowrap">
+                                                {!pub.isApproved && (
+                                                    <button
+                                                        onClick={() => handleApprove(pub.id)}
+                                                        disabled={actionLoading === pub.id}
+                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-medium hover:bg-emerald-500 transition disabled:opacity-50"
+                                                    >
+                                                        {actionLoading === pub.id ? (
+                                                            <Loader2 size={12} className="animate-spin" />
+                                                        ) : (
+                                                            <UserCheck size={12} />
+                                                        )}
+                                                        Approve
+                                                    </button>
+                                                )}
                                                 <button
-                                                    onClick={() => handleApprove(pub.id)}
+                                                    onClick={() => handleReject(pub.id)}
                                                     disabled={actionLoading === pub.id}
-                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-medium hover:bg-emerald-500 transition disabled:opacity-50"
+                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 text-red-400 text-xs font-medium hover:bg-red-500/10 transition border border-red-500/20 disabled:opacity-50"
                                                 >
                                                     {actionLoading === pub.id ? (
                                                         <Loader2 size={12} className="animate-spin" />
                                                     ) : (
-                                                        <UserCheck size={12} />
+                                                        <UserX size={12} />
                                                     )}
-                                                    Approve
+                                                    {pub.isApproved ? 'Delete' : 'Reject'}
                                                 </button>
-                                            )}
-                                            <button
-                                                onClick={() => handleReject(pub.id)}
-                                                disabled={actionLoading === pub.id}
-                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 text-red-400 text-xs font-medium hover:bg-red-500/10 transition border border-red-500/20 disabled:opacity-50"
-                                            >
-                                                {actionLoading === pub.id ? (
-                                                    <Loader2 size={12} className="animate-spin" />
-                                                ) : (
-                                                    <UserX size={12} />
-                                                )}
-                                                {pub.isApproved ? 'Delete' : 'Reject'}
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 )}
             </DashboardLayout>

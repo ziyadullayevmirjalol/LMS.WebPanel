@@ -103,52 +103,53 @@ export default function StudentSubjectDetailPage() {
                 ) : subject ? (
                     <div className="max-w-4xl mx-auto">
                         {/* Header Section */}
-                        <div className="bg-slate-900 rounded-3xl border border-slate-800 p-8 mb-8 shadow-xl relative overflow-hidden">
-                            <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
+                        <div className="bg-slate-900 rounded-[2.5rem] border border-slate-800 p-6 sm:p-10 mb-8 shadow-2xl relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
+                            <div className="absolute bottom-0 left-0 w-32 h-32 bg-purple-500/10 rounded-full blur-2xl -ml-8 -mb-8 pointer-events-none" />
 
-                            <div className="flex flex-col md:flex-row gap-8 items-start relative z-10">
-                                <div className="h-32 w-32 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 shrink-0 border border-indigo-500/20">
-                                    <BookOpen size={48} />
+                            <div className="flex flex-col md:flex-row gap-8 items-center md:items-start relative z-10 text-center md:text-left">
+                                <div className="h-24 w-24 md:h-40 md:w-40 rounded-3xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 shrink-0 border border-indigo-500/20 shadow-xl group hover:scale-105 transition-transform duration-500">
+                                    <BookOpen size={48} className="md:w-16 md:h-16" />
                                 </div>
 
                                 <div className="flex-1">
-                                    <div className="flex items-center gap-3 mb-2">
-                                        <span className="bg-slate-800 text-slate-300 text-xs font-bold px-3 py-1 rounded-full border border-slate-700">
+                                    <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mb-4">
+                                        <span className="bg-indigo-500/20 text-indigo-400 text-[10px] font-black px-3 py-1 rounded-full border border-indigo-500/20 uppercase tracking-widest">
                                             Course
                                         </span>
                                         {enrollment && (
-                                            <span className="bg-emerald-500/20 text-emerald-400 text-xs font-bold px-3 py-1 rounded-full border border-emerald-500/20 flex items-center gap-1">
+                                            <span className="bg-emerald-500/20 text-emerald-400 text-[10px] font-black px-3 py-1 rounded-full border border-emerald-500/20 flex items-center gap-1 uppercase tracking-widest">
                                                 <CheckCircle size={12} />
                                                 Enrolled
                                             </span>
                                         )}
                                     </div>
-                                    <h1 className="text-3xl font-black text-white mb-3 tracking-tight">
+                                    <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-white mb-4 tracking-tighter leading-none">
                                         {subject.title}
                                     </h1>
-                                    <p className="text-slate-400 text-base leading-relaxed mb-6">
+                                    <p className="text-slate-400 text-base md:text-lg leading-relaxed mb-8 max-w-2xl">
                                         {subject.description}
                                     </p>
 
-                                    <div className="flex flex-wrap items-center gap-4">
+                                    <div className="flex flex-col sm:flex-row items-center gap-4">
                                         {enrollment ? (
                                             <Link
                                                 href={`/student/subjects/${subject.id}/learn`}
-                                                className="inline-flex items-center gap-2 bg-emerald-600 text-white px-8 py-3.5 rounded-xl hover:bg-emerald-500 transition shadow-lg shadow-emerald-500/20 font-bold"
+                                                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-emerald-600 text-white px-10 py-4 rounded-2xl hover:bg-emerald-500 transition-all shadow-xl shadow-emerald-500/20 font-black hover:-translate-y-1 active:translate-y-0"
                                             >
-                                                <PlayCircle size={20} />
+                                                <PlayCircle size={22} />
                                                 Continue Learning
                                             </Link>
                                         ) : (
                                             <button
                                                 onClick={handleEnroll}
                                                 disabled={enrolling}
-                                                className="inline-flex items-center gap-2 bg-indigo-600 text-white px-8 py-3.5 rounded-xl hover:bg-indigo-500 transition shadow-lg shadow-indigo-500/20 font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-indigo-600 text-white px-10 py-4 rounded-2xl hover:bg-indigo-500 transition-all shadow-xl shadow-indigo-500/20 font-black disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-1 active:translate-y-0"
                                             >
                                                 {enrolling ? (
-                                                    <Loader2 size={20} className="animate-spin" />
+                                                    <Loader2 size={22} className="animate-spin" />
                                                 ) : (
-                                                    <BookOpen size={20} />
+                                                    <BookOpen size={22} />
                                                 )}
                                                 Enroll Now
                                             </button>
