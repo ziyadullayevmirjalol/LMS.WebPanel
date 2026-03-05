@@ -70,8 +70,8 @@ export default function StudentRegisterPage() {
 
             <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
                 <div className="flex justify-center mb-6">
-                    <div className="h-16 w-16 rounded-2xl bg-blue-600 flex items-center justify-center shadow-xl shadow-blue-500/20">
-                        <GraduationCap className="text-white h-9 w-9" />
+                    <div className="h-16 w-16 rounded-2xl bg-blue-600 flex items-center justify-center shadow-xl shadow-blue-500/20 border border-white/10">
+                        <span className="text-white text-3xl font-black">L</span>
                     </div>
                 </div>
                 <h2 className="text-center text-4xl font-extrabold text-white tracking-tight">
