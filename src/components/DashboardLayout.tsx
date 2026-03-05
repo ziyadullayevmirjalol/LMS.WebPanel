@@ -3,7 +3,7 @@
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
     LogOut,
     LayoutDashboard,
@@ -16,6 +16,10 @@ import {
     Menu,
     X,
     User,
+    Shield,
+    GraduationCap,
+    BookMarked,
+    Loader2
 } from 'lucide-react';
 
 interface NavItem {
@@ -35,7 +39,7 @@ export default function DashboardLayout({
     title,
     navItems,
 }: DashboardLayoutProps) {
-    const { user, logout } = useAuth();
+    const { user, logout, isLoading } = useAuth();
     const pathname = usePathname();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -53,23 +57,82 @@ export default function DashboardLayout({
         }
     }, [isSidebarOpen]);
 
-    const isActiveLink = (href: string) => {
-        // Base paths that should only match exactly to avoid highlighting parents (like /admin) while on subpaths
-        const basePaths = ['/admin', '/publisher', '/student'];
+    const theme = useMemo(() => {
+        const role = user?.role;
+        switch (role) {
+            case 'Student':
+                return {
+                    primary: 'bg-blue-600',
+                    primaryText: 'text-blue-400',
+                    accent: 'text-blue-300',
+                    hover: 'hover:bg-blue-800/20',
+                    activeBg: 'bg-blue-600/20',
+                    activeBorder: 'border-blue-500/20',
+                    shadow: 'shadow-blue-500/20',
+                    avatar: 'bg-blue-600/30 text-blue-300',
+                    Icon: GraduationCap
+                };
+            case 'Publisher':
+                return {
+                    primary: 'bg-emerald-600',
+                    primaryText: 'text-emerald-400',
+                    accent: 'text-emerald-300',
+                    hover: 'hover:bg-emerald-800/20',
+                    activeBg: 'bg-emerald-600/20',
+                    activeBorder: 'border-emerald-500/20',
+                    shadow: 'shadow-emerald-500/20',
+                    avatar: 'bg-emerald-600/30 text-emerald-300',
+                    Icon: BookMarked
+                };
+            case 'Admin':
+                return {
+                    primary: 'bg-red-600',
+                    primaryText: 'text-red-400',
+                    accent: 'text-red-300',
+                    hover: 'hover:bg-red-800/20',
+                    activeBg: 'bg-red-600/20',
+                    activeBorder: 'border-red-500/20',
+                    shadow: 'shadow-red-500/20',
+                    avatar: 'bg-red-600/30 text-red-300',
+                    Icon: Shield
+                };
+            default:
+                return {
+                    primary: 'bg-indigo-600',
+                    primaryText: 'text-indigo-400',
+                    accent: 'text-indigo-300',
+                    hover: 'hover:bg-indigo-800/20',
+                    activeBg: 'bg-indigo-600/20',
+                    activeBorder: 'border-indigo-500/20',
+                    shadow: 'shadow-indigo-500/20',
+                    avatar: 'bg-indigo-600/30 text-indigo-300',
+                    Icon: LayoutDashboard
+                };
+        }
+    }, [user?.role]);
 
+    const isActiveLink = (href: string) => {
+        const basePaths = ['/admin', '/publisher', '/student'];
         if (basePaths.includes(href)) {
             return pathname === href;
         }
-
         return pathname === href || pathname.startsWith(href + '/');
     };
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+                <Loader2 className="h-10 w-10 animate-spin text-slate-800" />
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-slate-950 flex flex-col md:flex-row">
             {/* ── Mobile Top Header ── */}
             <header className="md:hidden h-16 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-5 sticky top-0 z-40">
                 <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-lg bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                    <div className={`h-8 w-8 rounded-lg ${theme.primary} flex items-center justify-center shadow-lg ${theme.shadow}`}>
                         <span className="text-white text-base font-bold">L</span>
                     </div>
                     <span className="text-base font-bold text-white truncate max-w-[150px]">{title}</span>
@@ -99,8 +162,8 @@ export default function DashboardLayout({
                 {/* Brand & Close (Mobile) */}
                 <div className="h-16 flex items-center justify-between px-5 border-b border-slate-800">
                     <div className="flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-                            <span className="text-white text-lg font-bold">L</span>
+                        <div className={`h-9 w-9 rounded-xl ${theme.primary} flex items-center justify-center shadow-lg ${theme.shadow}`}>
+                            <theme.Icon className="text-white h-5 w-5" />
                         </div>
                         <span className="text-lg font-bold text-white">{title}</span>
                     </div>
@@ -121,16 +184,16 @@ export default function DashboardLayout({
                                 key={item.href}
                                 href={item.href}
                                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${active
-                                    ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/20'
-                                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                                    ? `${theme.activeBg} ${theme.primaryText} border ${theme.activeBorder}`
+                                    : `text-slate-400 hover:text-slate-200 ${theme.hover}`
                                     }`}
                             >
-                                <span className={active ? 'text-indigo-400' : 'text-slate-500'}>
+                                <span className={active ? theme.primaryText : 'text-slate-500'}>
                                     {item.icon}
                                 </span>
                                 {item.label}
                                 {active && (
-                                    <ChevronRight size={14} className="ml-auto text-indigo-400" />
+                                    <ChevronRight size={14} className={`ml-auto ${theme.primaryText}`} />
                                 )}
                             </Link>
                         );
@@ -144,8 +207,8 @@ export default function DashboardLayout({
                             href={`/${user?.role?.toLowerCase()}/profile`}
                             className="flex items-center gap-3 flex-1 min-w-0 group"
                         >
-                            <div className="h-8 w-8 rounded-full bg-indigo-600/30 flex items-center justify-center group-hover:bg-indigo-600/50 transition-colors">
-                                <span className="text-xs font-bold text-indigo-300">
+                            <div className={`h-8 w-8 rounded-full ${theme.avatar} flex items-center justify-center transition-colors`}>
+                                <span className="text-xs font-bold text-white/80">
                                     {user?.fullName?.charAt(0)?.toUpperCase() || '?'}
                                 </span>
                             </div>
