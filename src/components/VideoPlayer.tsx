@@ -5,6 +5,7 @@ import { Loader2, AlertCircle } from 'lucide-react';
 import { useState } from 'react';
 
 // Dynamically import ReactPlayer to ensure it only renders on the client
+// Using 'any' for the component type to bypass faulty type inference in this environment
 const ReactPlayer = dynamic(() => import('react-player'), {
     ssr: false,
     loading: () => (
@@ -12,7 +13,7 @@ const ReactPlayer = dynamic(() => import('react-player'), {
             <Loader2 className="h-6 w-6 text-indigo-500 animate-spin" />
         </div>
     )
-});
+}) as any;
 
 interface VideoPlayerProps {
     url: string;
