@@ -3,7 +3,7 @@ import { tokenManager } from '@/lib/tokenManager';
 import { getLoginPath } from '@/lib/getLoginPath';
 
 const api = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL || 'https://localhost:7193/api',
+    baseURL: process.env.NEXT_PUBLIC_API_URL || 'https://lmsapi-ojw1.onrender.com/api',
     headers: {
         'Content-Type': 'application/json',
     },
