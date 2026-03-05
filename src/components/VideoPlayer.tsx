@@ -1,19 +1,7 @@
 'use client';
 
-import dynamic from 'next/dynamic';
-import { Loader2, AlertCircle } from 'lucide-react';
-import { useState } from 'react';
-
-// Dynamically import ReactPlayer to ensure it only renders on the client
-// Using 'any' for the component type to bypass faulty type inference in this environment
-const ReactPlayer = dynamic(() => import('react-player'), {
-    ssr: false,
-    loading: () => (
-        <div className="flex items-center justify-center w-full h-full bg-slate-900/50 rounded-xl border border-slate-800 min-h-[200px]">
-            <Loader2 className="h-6 w-6 text-indigo-500 animate-spin" />
-        </div>
-    )
-}) as any;
+import { useState, useEffect } from 'react';
+import { Loader2, AlertCircle, PlayCircle } from 'lucide-react';
 
 interface VideoPlayerProps {
     url: string;
@@ -30,40 +18,66 @@ export default function VideoPlayer({
     controls = true,
     className = '',
 }: VideoPlayerProps) {
-    const [loading, setLoading] = useState(true);
+    const [isMounted, setIsMounted] = useState(false);
     const [error, setError] = useState(false);
 
-    return (
-        <div className={`relative w-full h-full min-h-[200px] ${className}`}>
-            {loading && !error && (
-                <div className="absolute inset-0 flex items-center justify-center bg-slate-900/50 z-10 rounded-xl">
-                    <Loader2 className="h-6 w-6 text-indigo-500 animate-spin" />
-                </div>
-            )}
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
 
-            {error && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 border border-slate-800 rounded-xl p-4 text-center">
+    const getYoutubeId = (url: string) => {
+        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+        const match = url.match(regExp);
+        return (match && match[2].length === 11) ? match[2] : null;
+    };
+
+    if (!isMounted) {
+        return (
+            <div className="flex items-center justify-center w-full h-full bg-slate-900/50 rounded-xl border border-slate-800 min-h-[200px]">
+                <Loader2 className="h-6 w-6 text-indigo-500 animate-spin" />
+            </div>
+        );
+    }
+
+    const youtubeId = getYoutubeId(url);
+
+    if (youtubeId) {
+        return (
+            <div className={`relative w-full aspect-video ${className} rounded-xl overflow-hidden shadow-2xl`}>
+                <iframe
+                    width="100%"
+                    height="100%"
+                    src={`https://www.youtube.com/embed/${youtubeId}?rel=0&modestbranding=1`}
+                    title="YouTube video player"
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                    className="absolute inset-0"
+                />
+            </div>
+        );
+    }
+
+    // Fallback to video tag for other URLs (assumed direct files or supported formats)
+    return (
+        <div className={`relative w-full aspect-video ${className} bg-black rounded-xl overflow-hidden shadow-2xl border border-slate-800`}>
+            {error ? (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 p-4 text-center">
                     <AlertCircle className="h-8 w-8 text-amber-500 mb-2" />
                     <p className="text-sm text-slate-300 font-medium">Unable to load video</p>
-                    <p className="text-xs text-slate-500 mt-1">Please check the URL or your connection</p>
+                    <p className="text-xs text-slate-500 mt-1">Please check the URL: {url}</p>
                 </div>
+            ) : (
+                <video
+                    src={url}
+                    controls={controls}
+                    className="w-full h-full object-contain"
+                    onError={() => setError(true)}
+                    poster="" // Could add a poster if available
+                >
+                    Your browser does not support the video tag.
+                </video>
             )}
-
-            <ReactPlayer
-                url={url}
-                width={width}
-                height={height}
-                controls={controls}
-                onReady={() => setLoading(false)}
-                onBuffer={() => setLoading(true)}
-                onBufferEnd={() => setLoading(false)}
-                onError={() => {
-                    setLoading(false);
-                    setError(true);
-                }}
-                className="rounded-xl overflow-hidden shadow-2xl"
-                style={{ borderRadius: '12px', overflow: 'hidden' }}
-            />
         </div>
     );
 }
