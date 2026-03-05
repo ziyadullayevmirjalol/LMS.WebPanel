@@ -13,6 +13,8 @@ import {
     AlertCircle,
     X,
     ExternalLink,
+    Pencil,
+    Trash2,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -27,6 +29,9 @@ export default function PublisherSubjectsPage() {
         title: '',
         description: '',
     });
+    const [editingSubject, setEditingSubject] = useState<SubjectDto | null>(null);
+    const [updateLoading, setUpdateLoading] = useState(false);
+    const [deleteLoadingId, setDeleteLoadingId] = useState<string | null>(null);
 
     const fetchSubjects = useCallback(async () => {
         console.log('[PublisherSubjectsPage] Fetching subjects...');
@@ -62,6 +67,43 @@ export default function PublisherSubjectsPage() {
             setError('Failed to create subject.');
         } finally {
             setCreateLoading(false);
+        }
+    };
+
+    const handleUpdateSubject = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingSubject) return;
+
+        setUpdateLoading(true);
+        try {
+            const updated = await subjectService.update(editingSubject.id, {
+                title: editingSubject.title,
+                description: editingSubject.description,
+            });
+            setSubjects((prev) =>
+                prev.map((s) => (s.id === updated.id ? updated : s))
+            );
+            setEditingSubject(null);
+        } catch (err) {
+            console.error('Failed to update subject:', err);
+            setError('Failed to update subject.');
+        } finally {
+            setUpdateLoading(false);
+        }
+    };
+
+    const handleDeleteSubject = async (id: string) => {
+        if (!window.confirm('Are you sure you want to delete this subject?')) return;
+
+        setDeleteLoadingId(id);
+        try {
+            await subjectService.delete(id);
+            setSubjects((prev) => prev.filter((s) => s.id !== id));
+        } catch (err) {
+            console.error('Failed to delete subject:', err);
+            setError('Failed to delete subject.');
+        } finally {
+            setDeleteLoadingId(null);
         }
     };
 
@@ -130,8 +172,8 @@ export default function PublisherSubjectsPage() {
                                             {subject.title}
                                         </h3>
                                         <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${subject.isPublished
-                                                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                                                : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                                            : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
                                             }`}>
                                             {subject.isPublished ? 'Published' : 'Draft'}
                                         </span>
@@ -145,13 +187,34 @@ export default function PublisherSubjectsPage() {
                                                 ? new Date(subject.createdAt).toLocaleDateString()
                                                 : ''}
                                         </span>
-                                        <Link
-                                            href={`/publisher/subjects/${subject.id}`}
-                                            className="inline-flex items-center gap-1 text-sm font-medium text-indigo-400 hover:text-indigo-300 transition"
-                                        >
-                                            Manage
-                                            <ExternalLink size={12} />
-                                        </Link>
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={() => setEditingSubject(subject)}
+                                                className="p-1.5 text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition"
+                                                title="Edit Subject"
+                                            >
+                                                <Pencil size={14} />
+                                            </button>
+                                            <button
+                                                onClick={() => handleDeleteSubject(subject.id)}
+                                                disabled={deleteLoadingId === subject.id}
+                                                className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition disabled:opacity-50"
+                                                title="Delete Subject"
+                                            >
+                                                {deleteLoadingId === subject.id ? (
+                                                    <Loader2 size={14} className="animate-spin" />
+                                                ) : (
+                                                    <Trash2 size={14} />
+                                                )}
+                                            </button>
+                                            <Link
+                                                href={`/publisher/subjects/${subject.id}`}
+                                                className="inline-flex items-center gap-1 text-sm font-medium text-indigo-400 hover:text-indigo-300 transition ml-2"
+                                            >
+                                                Manage
+                                                <ExternalLink size={12} />
+                                            </Link>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -228,6 +291,78 @@ export default function PublisherSubjectsPage() {
                                             </span>
                                         ) : (
                                             'Create Subject'
+                                        )}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )}
+
+                {/* Edit Subject Modal */}
+                {editingSubject && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+                        <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6">
+                            <div className="flex items-center justify-between mb-6">
+                                <h2 className="text-lg font-semibold text-white">
+                                    Edit Subject
+                                </h2>
+                                <button
+                                    onClick={() => setEditingSubject(null)}
+                                    className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition"
+                                >
+                                    <X size={18} />
+                                </button>
+                            </div>
+                            <form onSubmit={handleUpdateSubject} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                                        Title
+                                    </label>
+                                    <input
+                                        type="text"
+                                        required
+                                        className="block w-full rounded-lg py-2.5 px-3 bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm transition"
+                                        value={editingSubject.title}
+                                        onChange={(e) =>
+                                            setEditingSubject((prev) => prev ? { ...prev, title: e.target.value } : null)
+                                        }
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                                        Description
+                                    </label>
+                                    <textarea
+                                        required
+                                        rows={3}
+                                        className="block w-full rounded-lg py-2.5 px-3 bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm transition resize-none"
+                                        value={editingSubject.description}
+                                        onChange={(e) =>
+                                            setEditingSubject((prev) => prev ? { ...prev, description: e.target.value } : null)
+                                        }
+                                    />
+                                </div>
+                                <div className="flex gap-3 pt-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setEditingSubject(null)}
+                                        className="flex-1 py-2.5 px-4 rounded-lg border border-slate-700 text-sm font-medium text-slate-300 hover:bg-slate-800 transition"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={updateLoading}
+                                        className="flex-1 py-2.5 px-4 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 disabled:opacity-50 transition"
+                                    >
+                                        {updateLoading ? (
+                                            <span className="flex items-center justify-center gap-2">
+                                                <Loader2 size={14} className="animate-spin" />
+                                                Saving...
+                                            </span>
+                                        ) : (
+                                            'Save Changes'
                                         )}
                                     </button>
                                 </div>

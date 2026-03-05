@@ -37,6 +37,11 @@ export const subjectService = {
         await api.post(`/Subjects/${id}/publish`);
     },
 
+    async update(id: string, dto: any): Promise<SubjectDto> {
+        const response = await api.put<SubjectDto>(`/Subjects/${id}`, dto);
+        return response.data;
+    },
+
     async toggleStatus(id: string, isActive: boolean): Promise<void> {
         await api.patch(`/Subjects/${id}/status`, isActive);
     },
@@ -68,6 +73,15 @@ export const moduleService = {
         const response = await api.get<ModuleDto[]>('/Modules/publisher');
         return response.data;
     },
+
+    async update(id: string, dto: any): Promise<ModuleDto> {
+        const response = await api.put<ModuleDto>(`/Modules/${id}`, dto);
+        return response.data;
+    },
+
+    async delete(id: string): Promise<void> {
+        await api.delete(`/Modules/${id}`);
+    },
 };
 
 // ── Lessons ──
@@ -92,6 +106,15 @@ export const lessonService = {
         const response = await api.get<LessonDto[]>('/Lessons/publisher');
         return response.data;
     },
+
+    async update(id: string, dto: any): Promise<LessonDto> {
+        const response = await api.put<LessonDto>(`/Lessons/${id}`, dto);
+        return response.data;
+    },
+
+    async delete(id: string): Promise<void> {
+        await api.delete(`/Lessons/${id}`);
+    },
 };
 
 // ── Content Blocks ──
@@ -110,5 +133,12 @@ export const contentBlockService = {
     async create(dto: ContentBlockCreateDto): Promise<ContentBlockDto> {
         const response = await api.post<ContentBlockDto>('/ContentBlocks', dto);
         return response.data;
+    },
+    async update(id: string, dto: any): Promise<ContentBlockDto> {
+        const response = await api.put<ContentBlockDto>(`/ContentBlocks/${id}`, dto);
+        return response.data;
+    },
+    async delete(id: string): Promise<void> {
+        await api.delete(`/ContentBlocks/${id}`);
     },
 };

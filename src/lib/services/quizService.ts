@@ -28,6 +28,15 @@ export const quizService = {
         return response.data;
     },
 
+    async updateQuestion(id: string, dto: any): Promise<QuizQuestionDto> {
+        const response = await api.put<QuizQuestionDto>(`/Quiz/question/${id}`, dto);
+        return response.data;
+    },
+
+    async deleteQuestion(id: string): Promise<void> {
+        await api.delete(`/Quiz/question/${id}`);
+    },
+
     /**
      * POST /api/quiz/submit
      */

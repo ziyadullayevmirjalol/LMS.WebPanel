@@ -14,6 +14,8 @@ import {
     X,
     ArrowLeft,
     ExternalLink,
+    Pencil,
+    Trash2,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -31,6 +33,9 @@ export default function ModuleDetailPage() {
         title: '',
         orderIndex: 0,
     });
+    const [editingLesson, setEditingLesson] = useState<LessonDto | null>(null);
+    const [updateLoading, setUpdateLoading] = useState(false);
+    const [deleteLoadingId, setDeleteLoadingId] = useState<string | null>(null);
 
     const fetchData = useCallback(async () => {
         setLoading(true);
@@ -68,6 +73,39 @@ export default function ModuleDetailPage() {
             setError('Failed to create lesson.');
         } finally {
             setCreateLoading(false);
+        }
+    };
+
+    const handleUpdateLesson = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingLesson) return;
+        setUpdateLoading(true);
+        try {
+            const updated = await lessonService.update(editingLesson.id, {
+                title: editingLesson.title,
+                orderIndex: editingLesson.orderIndex,
+            });
+            setLessons((prev) =>
+                prev.map((l) => (l.id === updated.id ? updated : l))
+            );
+            setEditingLesson(null);
+        } catch {
+            setError('Failed to update lesson.');
+        } finally {
+            setUpdateLoading(false);
+        }
+    };
+
+    const handleDeleteLesson = async (id: string) => {
+        if (!window.confirm('Are you sure you want to delete this lesson?')) return;
+        setDeleteLoadingId(id);
+        try {
+            await lessonService.delete(id);
+            setLessons((prev) => prev.filter((l) => l.id !== id));
+        } catch {
+            setError('Failed to delete lesson.');
+        } finally {
+            setDeleteLoadingId(null);
         }
     };
 
@@ -149,13 +187,36 @@ export default function ModuleDetailPage() {
                                                     </p>
                                                 </div>
                                             </div>
-                                            <Link
-                                                href={`/publisher/lessons/${lesson.id}`}
-                                                className="inline-flex items-center gap-1 text-sm font-medium text-indigo-400 hover:text-indigo-300 transition opacity-0 group-hover:opacity-100"
-                                            >
-                                                Manage Content
-                                                <ExternalLink size={12} />
-                                            </Link>
+                                            <div className="flex items-center gap-3">
+                                                <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition">
+                                                    <button
+                                                        onClick={() => setEditingLesson(lesson)}
+                                                        className="p-1.5 text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition"
+                                                        title="Edit Lesson"
+                                                    >
+                                                        <Pencil size={14} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteLesson(lesson.id)}
+                                                        disabled={deleteLoadingId === lesson.id}
+                                                        className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition disabled:opacity-50"
+                                                        title="Delete Lesson"
+                                                    >
+                                                        {deleteLoadingId === lesson.id ? (
+                                                            <Loader2 size={14} className="animate-spin" />
+                                                        ) : (
+                                                            <Trash2 size={14} />
+                                                        )}
+                                                    </button>
+                                                </div>
+                                                <Link
+                                                    href={`/publisher/lessons/${lesson.id}`}
+                                                    className="inline-flex items-center gap-1 text-sm font-medium text-indigo-400 hover:text-indigo-300 transition opacity-0 group-hover:opacity-100"
+                                                >
+                                                    Manage Content
+                                                    <ExternalLink size={12} />
+                                                </Link>
+                                            </div>
                                         </div>
                                     ))}
                             </div>
@@ -207,6 +268,61 @@ export default function ModuleDetailPage() {
                                         className="flex-1 py-2.5 px-4 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 disabled:opacity-50 transition"
                                     >
                                         {createLoading ? 'Creating...' : 'Add Lesson'}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )}
+
+                {/* ── Edit Lesson Modal ── */}
+                {editingLesson && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+                        <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6">
+                            <div className="flex items-center justify-between mb-6">
+                                <h2 className="text-lg font-semibold text-white">Edit Lesson</h2>
+                                <button
+                                    onClick={() => setEditingLesson(null)}
+                                    className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition"
+                                >
+                                    <X size={18} />
+                                </button>
+                            </div>
+                            <form onSubmit={handleUpdateLesson} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-1.5">Title</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        className="block w-full rounded-lg py-2.5 px-3 bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm transition"
+                                        value={editingLesson.title}
+                                        onChange={(e) => setEditingLesson({ ...editingLesson, title: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-1.5">Order Index</label>
+                                    <input
+                                        type="number"
+                                        required
+                                        className="block w-full rounded-lg py-2.5 px-3 bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm transition"
+                                        value={editingLesson.orderIndex}
+                                        onChange={(e) => setEditingLesson({ ...editingLesson, orderIndex: parseInt(e.target.value) })}
+                                    />
+                                </div>
+                                <div className="flex gap-3 pt-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setEditingLesson(null)}
+                                        className="flex-1 py-2.5 px-4 rounded-lg border border-slate-700 text-sm font-medium text-slate-300 hover:bg-slate-800 transition"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={updateLoading}
+                                        className="flex-1 py-2.5 px-4 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 disabled:opacity-50 transition"
+                                    >
+                                        {updateLoading ? 'Saving...' : 'Save Changes'}
                                     </button>
                                 </div>
                             </form>

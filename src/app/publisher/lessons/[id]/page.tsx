@@ -25,6 +25,8 @@ import {
     X,
     ArrowLeft,
     ChevronDown,
+    Pencil,
+    Trash2,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -51,9 +53,13 @@ export default function LessonDetailPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
-    // Content block creation
+    // Content block management
     const [showBlockModal, setShowBlockModal] = useState(false);
     const [blockLoading, setBlockLoading] = useState(false);
+    const [editingBlock, setEditingBlock] = useState<ContentBlockDto | null>(null);
+    const [updateLoading, setUpdateLoading] = useState(false);
+    const [deleteLoadingId, setDeleteLoadingId] = useState<string | null>(null);
+
     const [newBlock, setNewBlock] = useState<ContentBlockCreateDto>({
         lessonId: lessonId,
         type: ContentType.Text,
@@ -78,6 +84,10 @@ export default function LessonDetailPage() {
         correctOption: 'A',
         explanation: '',
     });
+
+    const [editingQuestion, setEditingQuestion] = useState<QuizQuestionDto | null>(null);
+    const [updateQuestionLoading, setUpdateQuestionLoading] = useState(false);
+    const [deleteQuestionLoadingId, setDeleteQuestionLoadingId] = useState<string | null>(null);
 
     const fetchData = useCallback(async () => {
         setLoading(true);
@@ -115,6 +125,40 @@ export default function LessonDetailPage() {
             setError('Failed to create content block.');
         } finally {
             setBlockLoading(false);
+        }
+    };
+
+    const handleUpdateBlock = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingBlock) return;
+        setUpdateLoading(true);
+        try {
+            const updated = await contentBlockService.update(editingBlock.id, {
+                contentText: editingBlock.contentText,
+                mediaUrl: editingBlock.mediaUrl,
+                orderIndex: editingBlock.orderIndex,
+            });
+            setBlocks((prev) =>
+                prev.map((b) => (b.id === updated.id ? updated : b))
+            );
+            setEditingBlock(null);
+        } catch {
+            setError('Failed to update content block.');
+        } finally {
+            setUpdateLoading(false);
+        }
+    };
+
+    const handleDeleteBlock = async (id: string) => {
+        if (!window.confirm('Are you sure you want to delete this content block?')) return;
+        setDeleteLoadingId(id);
+        try {
+            await contentBlockService.delete(id);
+            setBlocks((prev) => prev.filter((b) => b.id !== id));
+        } catch {
+            setError('Failed to delete content block.');
+        } finally {
+            setDeleteLoadingId(null);
         }
     };
 
@@ -159,6 +203,50 @@ export default function LessonDetailPage() {
             setError('Failed to add question.');
         } finally {
             setQuizLoading(false);
+        }
+    };
+
+    const handleUpdateQuestion = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingQuestion) return;
+        setUpdateQuestionLoading(true);
+        try {
+            const updated = await quizService.updateQuestion(editingQuestion.id, {
+                questionText: editingQuestion.questionText,
+                optionA: editingQuestion.optionA,
+                optionB: editingQuestion.optionB,
+                optionC: editingQuestion.optionC,
+                optionD: editingQuestion.optionD,
+                correctOption: editingQuestion.correctOption,
+                explanation: editingQuestion.explanation,
+            });
+            const blockId = editingQuestion.contentBlockId;
+            setQuizQuestions((prev) => ({
+                ...prev,
+                [blockId]: prev[blockId].map((q) => (q.id === updated.id ? updated : q)),
+            }));
+            setEditingQuestion(null);
+        } catch {
+            setError('Failed to update question.');
+        } finally {
+            setUpdateQuestionLoading(false);
+        }
+    };
+
+    const handleDeleteQuestion = async (blockId: string, questionId: string) => {
+        if (!window.confirm('Are you sure you want to delete this question?')) return;
+        setDeleteQuestionLoadingId(questionId);
+        try {
+            await quizService.deleteQuestion(questionId);
+            setQuizQuestions((prev) => {
+                const updated = { ...prev };
+                updated[blockId] = updated[blockId].filter((q) => q.id !== questionId);
+                return updated;
+            });
+        } catch {
+            setError('Failed to delete question.');
+        } finally {
+            setDeleteQuestionLoadingId(null);
         }
     };
 
@@ -235,20 +323,43 @@ export default function LessonDetailPage() {
                                                             </span>
                                                         </div>
                                                     </div>
-                                                    {block.type === ContentType.Quiz && (
-                                                        <button
-                                                            onClick={() => handleLoadQuizQuestions(block.id)}
-                                                            className="inline-flex items-center gap-1 text-sm font-medium text-indigo-400 hover:text-indigo-300 transition"
-                                                        >
-                                                            {expandedQuizBlock === block.id ? 'Hide' : 'Show'}{' '}
-                                                            Questions
-                                                            <ChevronDown
-                                                                size={14}
-                                                                className={`transition-transform ${expandedQuizBlock === block.id ? 'rotate-180' : ''
-                                                                    }`}
-                                                            />
-                                                        </button>
-                                                    )}
+                                                    <div className="flex items-center gap-2">
+                                                        {block.type === ContentType.Quiz && (
+                                                            <button
+                                                                onClick={() => handleLoadQuizQuestions(block.id)}
+                                                                className="inline-flex items-center gap-1 text-sm font-medium text-indigo-400 hover:text-indigo-300 transition mr-2"
+                                                            >
+                                                                {expandedQuizBlock === block.id ? 'Hide' : 'Show'}{' '}
+                                                                Questions
+                                                                <ChevronDown
+                                                                    size={14}
+                                                                    className={`transition-transform ${expandedQuizBlock === block.id ? 'rotate-180' : ''
+                                                                        }`}
+                                                                />
+                                                            </button>
+                                                        )}
+                                                        <div className="flex items-center gap-1.5 border-l border-slate-800 pl-3">
+                                                            <button
+                                                                onClick={() => setEditingBlock(block)}
+                                                                className="p-1.5 text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition"
+                                                                title="Edit Block"
+                                                            >
+                                                                <Pencil size={14} />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleDeleteBlock(block.id)}
+                                                                disabled={deleteLoadingId === block.id}
+                                                                className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition disabled:opacity-50"
+                                                                title="Delete Block"
+                                                            >
+                                                                {deleteLoadingId === block.id ? (
+                                                                    <Loader2 size={14} className="animate-spin" />
+                                                                ) : (
+                                                                    <Trash2 size={14} />
+                                                                )}
+                                                            </button>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                                 <div className="mt-3 text-sm text-slate-300 bg-slate-800/50 rounded-lg p-3 max-h-32 overflow-auto">
                                                     <pre className="whitespace-pre-wrap font-sans">
@@ -263,11 +374,32 @@ export default function LessonDetailPage() {
                                                     {(quizQuestions[block.id] || []).map((q, qIdx) => (
                                                         <div
                                                             key={q.id}
-                                                            className="bg-slate-900/60 rounded-lg border border-slate-800 p-4"
+                                                            className="bg-slate-900/60 rounded-lg border border-slate-800 p-4 group/q"
                                                         >
-                                                            <p className="text-sm font-medium text-white mb-2">
-                                                                Q{qIdx + 1}: {q.questionText}
-                                                            </p>
+                                                            <div className="flex items-start justify-between mb-2">
+                                                                <p className="text-sm font-medium text-white">
+                                                                    Q{qIdx + 1}: {q.questionText}
+                                                                </p>
+                                                                <div className="flex items-center gap-1 opacity-0 group-hover/q:opacity-100 transition">
+                                                                    <button
+                                                                        onClick={() => setEditingQuestion(q)}
+                                                                        className="p-1 text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 rounded transition"
+                                                                    >
+                                                                        <Pencil size={12} />
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => handleDeleteQuestion(block.id, q.id)}
+                                                                        disabled={deleteQuestionLoadingId === q.id}
+                                                                        className="p-1 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded transition disabled:opacity-50"
+                                                                    >
+                                                                        {deleteQuestionLoadingId === q.id ? (
+                                                                            <Loader2 size={12} className="animate-spin" />
+                                                                        ) : (
+                                                                            <Trash2 size={12} />
+                                                                        )}
+                                                                    </button>
+                                                                </div>
+                                                            </div>
                                                             <div className="space-y-1">
                                                                 <div className={`text-xs px-2 py-1 rounded ${q.correctOption === 'A' ? 'bg-emerald-500/10 text-emerald-300' : 'text-slate-400'}`}>
                                                                     A. {q.optionA} {q.correctOption === 'A' && ' ✓'}
@@ -495,6 +627,195 @@ export default function LessonDetailPage() {
                                         className="flex-1 py-2.5 px-4 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 disabled:opacity-50 transition"
                                     >
                                         {quizLoading ? 'Adding...' : 'Add Question'}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )}
+
+                {/* ── Edit Content Block Modal ── */}
+                {editingBlock && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+                        <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6">
+                            <div className="flex items-center justify-between mb-6">
+                                <h2 className="text-lg font-semibold text-white">
+                                    Edit Content Block
+                                </h2>
+                                <button
+                                    onClick={() => setEditingBlock(null)}
+                                    className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition"
+                                >
+                                    <X size={18} />
+                                </button>
+                            </div>
+                            <form onSubmit={handleUpdateBlock} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                                        Type
+                                    </label>
+                                    <div className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium border ${blockTypeColors[editingBlock.type]}`}>
+                                        {blockTypeIcons[editingBlock.type]}
+                                        <span className="ml-1.5">{ContentType[editingBlock.type]}</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                                        Content
+                                    </label>
+                                    <textarea
+                                        required
+                                        rows={5}
+                                        className="block w-full rounded-lg py-2.5 px-3 bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm transition resize-none font-mono"
+                                        placeholder={
+                                            editingBlock.type === ContentType.Text
+                                                ? 'Enter text content...'
+                                                : editingBlock.type === ContentType.Video
+                                                    ? 'Enter video URL...'
+                                                    : editingBlock.type === ContentType.Pdf
+                                                        ? 'Enter PDF URL...'
+                                                        : 'Quiz block description'
+                                        }
+                                        value={(editingBlock.type === ContentType.Text || editingBlock.type === ContentType.Quiz ? editingBlock.contentText : editingBlock.mediaUrl) || ''}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            if (editingBlock.type === ContentType.Text || editingBlock.type === ContentType.Quiz) {
+                                                setEditingBlock({ ...editingBlock, contentText: val, mediaUrl: '' });
+                                            } else {
+                                                setEditingBlock({ ...editingBlock, mediaUrl: val, contentText: '' });
+                                            }
+                                        }}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-1.5">Order Index</label>
+                                    <input
+                                        type="number"
+                                        required
+                                        className="block w-full rounded-lg py-2.5 px-3 bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm transition"
+                                        value={editingBlock.orderIndex}
+                                        onChange={(e) => setEditingBlock({ ...editingBlock, orderIndex: parseInt(e.target.value) })}
+                                    />
+                                </div>
+                                <div className="flex gap-3 pt-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setEditingBlock(null)}
+                                        className="flex-1 py-2.5 px-4 rounded-lg border border-slate-700 text-sm font-medium text-slate-300 hover:bg-slate-800 transition"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={updateLoading}
+                                        className="flex-1 py-2.5 px-4 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 disabled:opacity-50 transition"
+                                    >
+                                        {updateLoading ? 'Saving...' : 'Save Changes'}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )}
+                {/* ── Edit Quiz Question Modal ── */}
+                {editingQuestion && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+                        <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6 max-h-[90vh] overflow-y-auto">
+                            <div className="flex items-center justify-between mb-6">
+                                <h2 className="text-lg font-semibold text-white">
+                                    Edit Quiz Question
+                                </h2>
+                                <button
+                                    onClick={() => setEditingQuestion(null)}
+                                    className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition"
+                                >
+                                    <X size={18} />
+                                </button>
+                            </div>
+                            <form onSubmit={handleUpdateQuestion} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                                        Question
+                                    </label>
+                                    <input
+                                        type="text"
+                                        required
+                                        className="block w-full rounded-lg py-2.5 px-3 bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm transition"
+                                        value={editingQuestion.questionText}
+                                        onChange={(e) =>
+                                            setEditingQuestion({
+                                                ...editingQuestion,
+                                                questionText: e.target.value,
+                                            })
+                                        }
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                                        Options
+                                    </label>
+                                    <div className="space-y-4">
+                                        {(['A', 'B', 'C', 'D'] as const).map((optStr) => (
+                                            <div key={optStr} className="flex items-center gap-2">
+                                                <input
+                                                    type="radio"
+                                                    name="correctOptionEdit"
+                                                    checked={editingQuestion.correctOption === optStr}
+                                                    onChange={() =>
+                                                        setEditingQuestion({
+                                                            ...editingQuestion,
+                                                            correctOption: optStr,
+                                                        })
+                                                    }
+                                                    className="w-4 h-4 text-emerald-500 bg-slate-800 border-slate-700 focus:ring-emerald-500"
+                                                />
+                                                <input
+                                                    type="text"
+                                                    required={optStr === 'A' || optStr === 'B'}
+                                                    className="flex-1 rounded-lg py-2 px-3 bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-sm transition"
+                                                    placeholder={`Option ${optStr}`}
+                                                    value={(editingQuestion as any)[`option${optStr}`] || ''}
+                                                    onChange={(e) =>
+                                                        setEditingQuestion({
+                                                            ...editingQuestion,
+                                                            [`option${optStr}`]: e.target.value,
+                                                        })
+                                                    }
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                                        Explanation (optional)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        className="block w-full rounded-lg py-2.5 px-3 bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-sm transition"
+                                        value={editingQuestion.explanation || ''}
+                                        onChange={(e) =>
+                                            setEditingQuestion({
+                                                ...editingQuestion,
+                                                explanation: e.target.value,
+                                            })
+                                        }
+                                    />
+                                </div>
+                                <div className="flex gap-3 pt-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setEditingQuestion(null)}
+                                        className="flex-1 py-2.5 px-4 rounded-lg border border-slate-700 text-sm font-medium text-slate-300 hover:bg-slate-800 transition"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={updateQuestionLoading}
+                                        className="flex-1 py-2.5 px-4 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 disabled:opacity-50 transition"
+                                    >
+                                        {updateQuestionLoading ? 'Saving...' : 'Save Changes'}
                                     </button>
                                 </div>
                             </form>
