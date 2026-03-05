@@ -23,7 +23,7 @@ import {
     Puzzle
 } from 'lucide-react';
 import Link from 'next/link';
-import ReactPlayer from 'react-player';
+import VideoPlayer from '@/components/VideoPlayer';
 
 export default function StudentLearningPage() {
     const params = useParams();
@@ -296,14 +296,12 @@ export default function StudentLearningPage() {
                                                 {block.type === 1 && ( // Video
                                                     <div className="aspect-video w-full rounded-xl overflow-hidden bg-black/50 mx-auto border border-slate-800 flex items-center justify-center">
                                                         {block.mediaUrl ? (
-                                                            <ReactPlayer
-                                                                // @ts-expect-error react-player types issue with next.js compilation
+                                                            <VideoPlayer
                                                                 url={block.mediaUrl}
                                                                 width="100%"
                                                                 height="100%"
                                                                 controls
                                                                 className="rounded-xl overflow-hidden"
-                                                                fallback={<div className="text-slate-500">Loading video...</div>}
                                                             />
                                                         ) : (
                                                             <p className="text-slate-500 italic">No video URL provided.</p>
