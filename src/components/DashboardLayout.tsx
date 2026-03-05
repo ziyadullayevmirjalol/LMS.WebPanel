@@ -15,6 +15,7 @@ import {
     ChevronRight,
     Menu,
     X,
+    User,
 } from 'lucide-react';
 
 interface NavItem {
@@ -139,17 +140,22 @@ export default function DashboardLayout({
                 {/* User footer */}
                 <div className="p-3 border-t border-slate-800">
                     <div className="flex items-center gap-3 px-3 py-2">
-                        <div className="h-8 w-8 rounded-full bg-indigo-600/30 flex items-center justify-center">
-                            <span className="text-xs font-bold text-indigo-300">
-                                {user?.fullName?.charAt(0)?.toUpperCase() || '?'}
-                            </span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-slate-200 truncate">
-                                {user?.fullName}
-                            </p>
-                            <p className="text-xs text-slate-500 truncate">{user?.email}</p>
-                        </div>
+                        <Link
+                            href={`/${user?.role?.toLowerCase()}/profile`}
+                            className="flex items-center gap-3 flex-1 min-w-0 group"
+                        >
+                            <div className="h-8 w-8 rounded-full bg-indigo-600/30 flex items-center justify-center group-hover:bg-indigo-600/50 transition-colors">
+                                <span className="text-xs font-bold text-indigo-300">
+                                    {user?.fullName?.charAt(0)?.toUpperCase() || '?'}
+                                </span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-slate-200 truncate group-hover:text-white transition-colors">
+                                    {user?.fullName}
+                                </p>
+                                <p className="text-xs text-slate-500 truncate">{user?.email}</p>
+                            </div>
+                        </Link>
                         <button
                             onClick={logout}
                             className="p-1.5 text-slate-500 hover:text-red-400 rounded-lg hover:bg-slate-800 transition"
@@ -176,6 +182,7 @@ export const adminNavItems: NavItem[] = [
     { label: 'Publishers', href: '/admin/publishers', icon: <Users size={18} /> },
     { label: 'Students', href: '/admin/students', icon: <Users size={18} /> },
     { label: 'Subjects', href: '/admin/subjects', icon: <BookOpen size={18} /> },
+    { label: 'Profile', href: '/admin/profile', icon: <User size={18} /> },
 ];
 
 export const publisherNavItems: NavItem[] = [
@@ -184,9 +191,11 @@ export const publisherNavItems: NavItem[] = [
     { label: 'Modules', href: '/publisher/modules', icon: <Layers size={18} /> },
     { label: 'Lessons', href: '/publisher/lessons', icon: <FileText size={18} /> },
     { label: 'Quizzes', href: '/publisher/quizzes', icon: <Puzzle size={18} /> },
+    { label: 'Profile', href: '/publisher/profile', icon: <User size={18} /> },
 ];
 
 export const studentNavItems: NavItem[] = [
     { label: 'My Courses', href: '/student', icon: <LayoutDashboard size={18} /> },
     { label: 'Explore', href: '/student/explore', icon: <BookOpen size={18} /> },
+    { label: 'Profile', href: '/student/profile', icon: <User size={18} /> },
 ];

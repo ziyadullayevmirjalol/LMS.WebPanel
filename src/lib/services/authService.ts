@@ -67,4 +67,11 @@ export const authService = {
             tokenManager.clearTokens();
         }
     },
+
+    /**
+     * PUT /api/Auth/profile
+     */
+    async updateProfile(dto: any): Promise<void> {
+        await api.put('/Auth/profile', dto);
+    },
 };

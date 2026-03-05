@@ -20,6 +20,20 @@ export interface RegisterDto {
     fullName?: string;
 }
 
+export interface UserUpdateDto {
+    fullName?: string;
+    email?: string;
+    currentPassword?: string;
+    newPassword?: string;
+}
+
+export interface UserDto {
+    id: string;
+    email: string;
+    fullName: string;
+    role: string;
+}
+
 export interface AuthResponseDto {
     accessToken: string;
     refreshToken: string;
